@@ -139,6 +139,14 @@ export function App() {
     document.body.scrollTop = 0;
   }, [activePage]);
 
+  useLayoutEffect(() => {
+    const root = document.getElementById('root');
+    const isAdminDashboard = activePage === 'gureumi-beta-stats';
+    root?.classList.toggle('root--admin-dashboard', isAdminDashboard);
+
+    return () => root?.classList.remove('root--admin-dashboard');
+  }, [activePage]);
+
   const handleGroupPickerModeChange = useCallback((mode: PickerMode) => {
     if (activeActivityRef.current?.id !== 'group-picker') {
       return;

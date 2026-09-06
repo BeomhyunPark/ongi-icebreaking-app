@@ -53,6 +53,16 @@ button:focus-visible {
   box-shadow: 0 0 5rem rgba(0, 0, 0, 0.4);
 }
 
+#root.root--admin-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: #f3f6fb;
+  box-shadow: none;
+}
+
 @media (min-width: 31rem) {
   #root {
     margin-block: 1.5rem;
