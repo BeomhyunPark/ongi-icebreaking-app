@@ -31,7 +31,7 @@ it('다음 방문의 서버 상태가 확인되기 전에는 오래된 캐시로
   fireEvent.click(screen.getByRole('button', { name: '좋아요 취소 · 현재 5개' }));
   expect(setContentLike).toHaveBeenCalledExactlyOnceWith('anonymous-sharing', 'default', true);
   await act(async () => saving.resolve({ ...initial, liked: true, likeCount: 5 }));
-  expect(screen.getByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeTruthy();
+  expect(screen.queryByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeNull();
 });
 it('조회 실패를 표시하고 다시 조회해 서버 누적 수를 복원한다', async () => {
   vi.mocked(getContentLike).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ ...initial, liked: true, likeCount: 9 });
@@ -45,8 +45,8 @@ it('저장 실패는 성공으로 표시하지 않고 기존 상태로 돌린다
   vi.mocked(setContentLike).mockRejectedValue(new Error('offline'));
   render(<ActivityShareButton target={{ id: 'anonymous-sharing' }} />);
   fireEvent.click(await screen.findByRole('button', { name: '좋아요 추가 · 현재 4개' }));
-  expect(await screen.findByText('좋아요를 반영하지 못했어요. 잠시 후 다시 시도해주세요.')).toBeTruthy();
-  expect(screen.getByRole('button', { name: '좋아요 추가 · 현재 4개' })).toBeTruthy();
+  expect(screen.queryByText('좋아요를 반영하지 못했어요. 잠시 후 다시 시도해주세요.')).toBeNull();
+  expect(await screen.findByRole('button', { name: '좋아요 추가 · 현재 4개' })).toBeTruthy();
   expect(screen.queryByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeNull();
 });
 

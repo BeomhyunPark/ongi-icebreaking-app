@@ -262,7 +262,6 @@ export function GroupPickerApp({
   const [revealedLadderStarts, setRevealedLadderStarts] = useState<Set<number>>(new Set());
   const [revealAllQueue, setRevealAllQueue] = useState<number[] | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [shareMessage, setShareMessage] = useState('');
   const selectedMode = getPickerModeDefinition(mode);
 
   useEffect(() => {
@@ -329,7 +328,7 @@ export function GroupPickerApp({
     setRevealedLadderStarts(new Set());
     setActiveLadderStart(null);
     setRevealAllQueue(null);
-    setShareMessage('');
+
     setResult({
       mode,
       orderedNames: mode === 'ladder' ? nextNames : shuffle(nextNames),
@@ -354,7 +353,7 @@ export function GroupPickerApp({
     setActiveLadderStart(null);
     setRevealedLadderStarts(new Set());
     setRevealAllQueue(null);
-    setShareMessage('');
+
   };
 
   if (phase === 'drawing' && result) {
@@ -428,16 +427,16 @@ export function GroupPickerApp({
               : '오늘 기도할 사람';
 
       setIsSharing(true);
-      setShareMessage('');
+
       try {
         const file = await createGroupPickerResultFile({ modeTitle: resultMode.title, resultTitle, entries });
         const action = await shareGroupPickerResultFile(file);
         if (action === 'shared') {
           void recordShareClick('group-picker', 'native');
         }
-        setShareMessage(action === 'shared' ? '결과 이미지를 공유했어요.' : action === 'downloaded' ? '결과 이미지를 저장했어요.' : '공유를 취소했어요.');
+
       } catch {
-        setShareMessage('이미지를 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
+
       } finally {
         setIsSharing(false);
       }
@@ -534,7 +533,6 @@ export function GroupPickerApp({
               {isSharing ? '이미지 만드는 중…' : '결과 이미지 공유하기'}
             </PrimaryButton>
           ) : null}
-          {shareMessage ? <p className="group-picker-share-message" aria-live="polite">{shareMessage}</p> : null}
           {result.mode !== 'ladder' || allLadderResultsRevealed ? <button className="group-picker-redraw" type="button" onClick={prepareDraw}>다시 뽑기</button> : null}
           <button type="button" onClick={resetToSetup}>설정 바꾸기</button>
           <button type="button" onClick={onBackHome}>홈으로</button>

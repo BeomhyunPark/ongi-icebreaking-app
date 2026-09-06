@@ -50,7 +50,7 @@ export function useResultImage({ resultId, imageSrc }: UseResultImageOptions) {
   const handleImageAction = (action: ResultImageAction) => {
     switch (action) {
       case 'shared':
-        setSaveMessage('결과 이미지를 공유했어요.');
+        setSaveMessage(null);
         void recordShareClick('heart-trace', 'native');
         break;
       case 'downloaded':

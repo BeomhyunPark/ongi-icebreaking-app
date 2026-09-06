@@ -35,7 +35,7 @@ describe('온기 링크 공유', () => {
       title: '온기 | 우리 사이에 온기를',
       url: 'https://ongi.greengroove.app/',
     })));
-    expect(await screen.findByText('온기 링크를 공유했어요.')).toBeTruthy();
+    expect(screen.queryByText('온기 링크를 공유했어요.')).toBeNull();
   });
 
   it('화면에는 공유 아이콘 버튼만 노출한다', () => {
@@ -61,7 +61,7 @@ describe('온기 링크 공유', () => {
     fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://ongi.greengroove.app/'));
-    expect(await screen.findByText('온기 링크를 복사했어요.')).toBeTruthy();
+    expect(screen.queryByText('온기 링크를 복사했어요.')).toBeNull();
   });
 
   it('놀이별 제목과 공유 전용 URL을 시스템 공유창에 전달한다', async () => {

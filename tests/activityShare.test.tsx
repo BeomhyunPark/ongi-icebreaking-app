@@ -52,7 +52,7 @@ describe('놀이와 도구 링크 공유', () => {
       title: '극과 극 밸런스 게임 | 온기',
       url: 'https://ongi.greengroove.app/share/balance-game/',
     }));
-    expect(await screen.findByText('극과 극 밸런스 게임 링크를 공유했어요.')).toBeTruthy();
+    expect(screen.queryByText('극과 극 밸런스 게임 링크를 공유했어요.')).toBeNull();
   });
 
   it('밸런스 게임의 가볍게·조금 깊게 테마에 따라 공유 색상을 바꾸어준다', async () => {
@@ -75,11 +75,11 @@ describe('놀이와 도구 링크 공유', () => {
     const likeButton = await screen.findByRole('button', { name: '좋아요 추가 · 현재 0개' });
     fireEvent.click(likeButton);
     expect(await screen.findByRole('button', { name: '좋아요 취소 · 현재 1개' })).toBeTruthy();
-    expect(await screen.findByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeTruthy();
+    expect(screen.queryByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: '좋아요 취소 · 현재 1개' }));
     expect(await screen.findByRole('button', { name: '좋아요 추가 · 현재 0개' })).toBeTruthy();
-    expect(await screen.findByText('좋아요를 취소했어요. 누적 수에서 1개가 빠져요.')).toBeTruthy();
+    expect(screen.queryByText('좋아요를 취소했어요. 누적 수에서 1개가 빠져요.')).toBeNull();
   });
 
   it('밸런스 게임의 가볍게와 조금 깊게 좋아요를 따로 유지한다', async () => {
@@ -198,7 +198,7 @@ describe('놀이와 도구 링크 공유', () => {
       title: '나는 어떤 구르미일까? | 온기',
       url: 'https://ongi.greengroove.app/share/gureumi/',
     }));
-    expect(await screen.findByText('구르미 테스트 링크를 공유했어요.')).toBeTruthy();
+    expect(screen.queryByText('구르미 테스트 링크를 공유했어요.')).toBeNull();
     expect(window.location.search).toBe('?activity=gureumi-teaser');
   });
 });

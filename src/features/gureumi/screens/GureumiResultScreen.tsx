@@ -58,7 +58,6 @@ export function GureumiResultScreen({
 }: GureumiResultScreenProps) {
   const definition = GUREUMI_RESULTS[result.resultType];
   const [saveMessage, setSaveMessage] = useState('');
-  const [shareMessage, setShareMessage] = useState('');
   const [savingImage, setSavingImage] = useState(false);
   const [sharingResult, setSharingResult] = useState(false);
   const [kakaoButtonMode, setKakaoButtonMode] = useState<'loading' | 'sdk' | 'fallback'>('loading');
@@ -126,20 +125,14 @@ export function GureumiResultScreen({
   const handleKakaoShare = async () => {
     if (sharingResult) return;
     setSharingResult(true);
-    setShareMessage('');
+
     try {
-      const action = await shareGureumiResult({
+      await shareGureumiResult({
         name: definition.name,
         descriptor: definition.descriptor,
         characterKey: definition.characterKey,
       });
-      const messages = {
-        kakao: '카카오톡 공유 화면을 열었어요.',
-        native: '결과와 테스트 링크를 공유했어요.',
-        copied: '결과와 테스트 링크를 복사했어요.',
-        failed: '공유하지 못했어요. 잠시 후 다시 시도해주세요.',
-      } as const;
-      if (action !== 'cancelled') setShareMessage(messages[action]);
+
     } finally {
       setSharingResult(false);
     }
@@ -263,7 +256,6 @@ export function GureumiResultScreen({
             {kakaoButtonMode === 'loading' || sharingResult ? '공유 화면 준비 중…' : '카카오톡으로 결과 공유하기'}
           </button>
           {saveMessage ? <p aria-live="polite">{saveMessage}</p> : null}
-          {shareMessage ? <p aria-live="polite">{shareMessage}</p> : null}
           <button className="gureumi-result__all-button" type="button" onClick={() => setShowAllTypes((value) => !value)}>
             {showAllTypes ? '8가지 구르미 접기' : '8가지 구르미 모두 보기 →'}
           </button>

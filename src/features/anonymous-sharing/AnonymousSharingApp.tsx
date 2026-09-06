@@ -99,7 +99,6 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
   const [loading, setLoading] = useState(roomId !== null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [hostWriting, setHostWriting] = useState(false);
   const [revealConfirming, setRevealConfirming] = useState(false);
   const storyTop = useRef<HTMLHeadingElement>(null);
@@ -252,7 +251,6 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
     setRoomCode('');
     setName('');
     setError('');
-    setNotice('');
     setHostWriting(false);
     setCancelConfirming(false);
     setEntryMode(nextEntryMode);
@@ -469,17 +467,16 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
               <strong>{visibleRoomCode}</strong>
               <button type="button" onClick={() => {
                 if (!navigator.clipboard) {
-                  setNotice('이 브라우저에서는 링크를 직접 복사해주세요.');
+
                   return;
                 }
                 void navigator.clipboard.writeText(shareUrl)
                   .then(() => {
-                    setNotice('참여 링크를 복사했어요.');
+
                     void recordShareClick('anonymous-sharing', 'copy_link');
                   })
-                  .catch(() => setNotice('링크를 복사하지 못했어요.'));
+                  .catch(() => undefined);
               }}>참여 링크 복사</button>
-              <p aria-live="polite">{notice}</p>
             </div>
           ) : (
             <div className="anonymous-sharing-locked"><span aria-hidden="true">✓</span> 참여자 입장을 마감했어요.</div>

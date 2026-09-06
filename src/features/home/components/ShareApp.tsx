@@ -1,28 +1,12 @@
-import { useState } from 'react';
-
-import { shareAppLink, type ShareAppLinkResult } from '../services/shareAppLink';
+import { shareAppLink } from '../services/shareAppLink';
 
 export function ShareApp() {
-  const [message, setMessage] = useState<string | null>(null);
-
   const handleShare = async () => {
-    const result = await shareAppLink();
-    const messages: Partial<Record<ShareAppLinkResult, string>> = {
-      shared: '온기 링크를 공유했어요.',
-      copied: '온기 링크를 복사했어요.',
-      failed: '링크를 복사하지 못했어요. 주소창의 URL을 복사해 주세요.',
-    };
-
-    if (result !== 'cancelled') {
-      setMessage(messages[result] ?? null);
-    }
+    await shareAppLink();
   };
 
   return (
     <div className="share-app">
-      <p className="share-app__message" aria-live="polite" aria-atomic="true">
-        {message}
-      </p>
       <button
         className="share-app__button"
         type="button"

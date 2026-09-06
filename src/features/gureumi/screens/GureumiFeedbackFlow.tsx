@@ -198,7 +198,6 @@ export function GureumiFeedbackFlow({
   const [selectedType, setSelectedType] = useState<GureumiResultType>(result.resultType);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [shareMessage, setShareMessage] = useState('');
   const [flowRating, setFlowRating] = useState<number>();
   const [questionUiRating, setQuestionUiRating] = useState<number>();
   const [resultHelpfulnessRating, setResultHelpfulnessRating] = useState<number>();
@@ -260,13 +259,13 @@ export function GureumiFeedbackFlow({
   };
 
   const shareResult = async () => {
-    const action = await shareGureumiResult({
+    await shareGureumiResult({
       name: GUREUMI_RESULTS[result.resultType].name,
       descriptor: GUREUMI_RESULTS[result.resultType].descriptor,
       characterKey: GUREUMI_RESULTS[result.resultType].characterKey,
     });
-    if (action === 'copied') setShareMessage('결과와 테스트 링크를 복사했어요.');
-    if (action === 'failed') setShareMessage('공유하지 못했어요. 결과 화면에서 다시 시도해주세요.');
+
+
   };
 
   if (screen === 'questions') {
@@ -352,7 +351,6 @@ export function GureumiFeedbackFlow({
             <button type="button" onClick={followUpComplete ? onRetest : onBackResult}>{followUpComplete ? '다시 테스트하기' : '결과로 돌아가기'}</button>
             <button type="button" onClick={() => void shareResult()}>결과 공유하기</button>
           </div>
-          {shareMessage ? <p className="gureumi-feedback__message" aria-live="polite">{shareMessage}</p> : null}
         </div>
       </main>
     );

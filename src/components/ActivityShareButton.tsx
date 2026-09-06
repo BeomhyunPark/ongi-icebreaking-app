@@ -5,7 +5,6 @@ import { getShareTarget } from '../app/shareTargets';
 import {
   buildActivityShareUrl,
   shareAppLink,
-  type ShareAppLinkResult,
 } from '../features/home/services/shareAppLink';
 import { getEngagementContentCode } from '../engagement/contentCodes';
 import {
@@ -34,10 +33,9 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
     getCachedContentLike(contentCode, variantCode)
   ));
   const [likeBusy, setLikeBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [reload, setReload] = useState(0);
-  const [feedback, setFeedback] = useState('');
   const mutation = useRef(0);
   const pending = useRef(false);
 
@@ -45,7 +43,7 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
     let active = true;
     const revision = mutation.current;
     setReady(false);
-    setError('');
+    setLoadFailed(false);
 
     void getContentLike(contentCode, variantCode)
       .then((state) => {
@@ -55,7 +53,7 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
         }
       })
       .catch(() => {
-        if (active) setError('좋아요를 불러오지 못했어요. 다시 시도해주세요.');
+        if (active) setLoadFailed(true);
       });
 
     return () => { active = false; };
@@ -88,14 +86,11 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
       likeCount: Math.max(0, previous.likeCount + (nextLiked ? 1 : -1)),
     });
     setLikeBusy(true);
-    setError('');
-    setFeedback('');
+    setLoadFailed(false);
     try {
       setLikeState(await setContentLike(contentCode, variantCode, nextLiked));
-      setFeedback(nextLiked ? '좋아요를 저장했어요. 다음에 방문해도 유지돼요.' : '좋아요를 취소했어요. 누적 수에서 1개가 빠져요.');
     } catch {
       setLikeState(previous);
-      setError('좋아요를 반영하지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       pending.current = false;
       setLikeBusy(false);
@@ -104,15 +99,13 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
 
   return (
     <>
-      <p aria-live="polite" aria-atomic="true">{error || feedback}</p>
       <button
         className={`activity-link-share__like${likeState?.liked ? ' is-liked' : ''}`}
         type="button"
-        disabled={likeBusy || (!ready && !error)}
+        disabled={likeBusy || (!ready && !loadFailed)}
         aria-busy={likeBusy}
-        title={ready ? (likeState?.liked ? '이미 좋아요를 눌렀어요. 다시 누르면 취소돼요.' : '전체 기간 누적 좋아요') : undefined}
         aria-label={!ready
-          ? (error ? '좋아요 다시 불러오기' : '좋아요 정보 불러오는 중')
+          ? (loadFailed ? '좋아요 다시 불러오기' : '좋아요 정보 불러오는 중')
           : `좋아요 ${likeState?.liked ? '취소' : '추가'} · 현재 ${likeState?.likeCount ?? 0}개`}
         aria-pressed={likeState?.liked ?? false}
         onClick={ready ? handleLike : () => setReload((value) => value + 1)}
@@ -129,14 +122,9 @@ const ActivityLikeButton = memo(function ActivityLikeButton({
 export const ActivityShareButton = memo(function ActivityShareButton({
   target,
 }: ActivityShareButtonProps) {
-  const [message, setMessage] = useState('');
   const shareTarget = getShareTarget(target);
   const contentCode = getEngagementContentCode(target);
   const variantCode = getEngagementLikeVariant(target);
-
-  useEffect(() => {
-    setMessage('');
-  }, [shareTarget?.slug]);
 
   if (!shareTarget && !contentCode) {
     return null;
@@ -149,17 +137,8 @@ export const ActivityShareButton = memo(function ActivityShareButton({
       title: shareTarget.title,
       url: buildActivityShareUrl(shareTarget.slug),
     });
-    const messages: Partial<Record<ShareAppLinkResult, string>> = {
-      shared: `${shareTarget.label} 링크를 공유했어요.`,
-      copied: `${shareTarget.label} 링크를 복사했어요.`,
-      failed: '링크를 복사하지 못했어요.',
-    };
-
-    if (result !== 'cancelled') {
-      setMessage(messages[result] ?? '');
-      if (contentCode && (result === 'shared' || result === 'copied')) {
-        void recordShareClick(contentCode, result === 'shared' ? 'native' : 'copy_link');
-      }
+    if (contentCode && (result === 'shared' || result === 'copied')) {
+      void recordShareClick(contentCode, result === 'shared' ? 'native' : 'copy_link');
     }
   };
 
@@ -174,7 +153,6 @@ export const ActivityShareButton = memo(function ActivityShareButton({
         '--activity-share-secondary': secondary,
       } as CSSProperties}
     >
-      <p aria-live="polite" aria-atomic="true">{message}</p>
       {contentCode ? (
         <ActivityLikeButton
           contentCode={contentCode}

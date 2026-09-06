@@ -5,7 +5,6 @@ import { assetUrl } from '../../../utils/assetUrl';
 import {
   buildActivityShareUrl,
   shareAppLink,
-  type ShareAppLinkResult,
 } from '../../home/services/shareAppLink';
 
 type GureumiIntroScreenProps = {
@@ -30,7 +29,6 @@ export function GureumiIntroScreen({
   onBackHome,
 }: GureumiIntroScreenProps) {
   const [sharing, setSharing] = useState(false);
-  const [shareMessage, setShareMessage] = useState('');
 
   const handleShare = async () => {
     if (sharing) return;
@@ -39,19 +37,13 @@ export function GureumiIntroScreen({
     if (!shareTarget) return;
 
     setSharing(true);
-    setShareMessage('');
+
     try {
-      const result = await shareAppLink({
+      await shareAppLink({
         title: shareTarget.title,
         url: buildActivityShareUrl(shareTarget.slug),
       });
-      const messages: Partial<Record<ShareAppLinkResult, string>> = {
-        shared: '구르미 테스트 링크를 공유했어요.',
-        copied: '구르미 테스트 링크를 복사했어요.',
-        failed: '링크를 공유하지 못했어요. 잠시 후 다시 시도해주세요.',
-      };
 
-      if (result !== 'cancelled') setShareMessage(messages[result] ?? '');
     } finally {
       setSharing(false);
     }
@@ -117,9 +109,6 @@ export function GureumiIntroScreen({
           </span>
           <span className="gureumi-intro__share-arrow" aria-hidden="true">↗</span>
         </button>
-        {shareMessage ? (
-          <p className="gureumi-intro__share-message" role="status">{shareMessage}</p>
-        ) : null}
         <p className="gureumi-credit">유형, 문항 디자인 · 권봉준 · hyunee</p>
         <p className="gureumi-credit">기획, UIUX, 개발 · hyunee</p>
 
