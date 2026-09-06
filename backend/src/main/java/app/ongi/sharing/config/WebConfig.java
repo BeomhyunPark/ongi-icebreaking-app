@@ -25,6 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
             .allowedHeaders(
                 "Content-Type",
                 "X-OnGi-Client",
+                "X-OnGi-Admin-Key",
                 "X-Gureumi-Resume-Token",
                 "Last-Event-ID"
             )

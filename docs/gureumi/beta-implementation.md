@@ -26,9 +26,10 @@
 
 - Frontend: `/?page=gureumi-beta-stats`
 - API: `GET /api/gureumi/internal/statistics`
+- Header: `X-OnGi-Admin-Key: <ONGI_ADMIN_KEY>`
 - Filter: `version`, `completedAnswersOnly`, `firstAttemptOnly`
 
-통계 화면은 홈과 공개 메뉴에 링크하지 않는 hidden URL로 운영한다. 별도 인증은 없으며 URL을 알게 된 사람은 누구나 접근할 수 있다. 대신 API는 개별 attempt나 token이 아닌 익명 집계만 반환하고 `no-store`를 사용한다. 운영 인원이 늘거나 외부 공유 위험이 생기면 인증을 추가한다.
+통계 화면은 홈과 공개 메뉴에 링크하지 않는 hidden URL로 운영하며, 서버 환경변수 `ONGI_ADMIN_KEY`와 일치하는 관리자 키를 입력해야 한다. API는 개별 attempt나 token이 아닌 익명 집계만 반환하고 `no-store`를 사용한다. 관리자 키는 브라우저 탭의 `sessionStorage`에만 보관하며 탭을 닫으면 삭제된다.
 
 ## 익명 Beta 분석
 

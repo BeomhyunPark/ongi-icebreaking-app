@@ -37,7 +37,8 @@ management:
 
 ongi:
   allowed-origins: ${ONGI_ALLOWED_ORIGINS:http://localhost:5173}
-  # The hidden Gureumi statistics route exposes aggregate data only.
+  admin:
+    key: ${ONGI_ADMIN_KEY:}
   session:
     secure-cookie: ${ONGI_SECURE_COOKIE:false}
     tombstone-retention: ${ONGI_TOMBSTONE_RETENTION:24h}

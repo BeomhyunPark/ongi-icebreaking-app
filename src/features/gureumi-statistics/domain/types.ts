@@ -86,3 +86,49 @@ export type GureumiStatistics = {
   results: GureumiResultStatistics[];
   feedback: GureumiFeedbackStatistics;
 };
+
+export type DashboardSummary = {
+  totalVisitorCount: number;
+  periodVisitorCount: number;
+  todayVisitorCount: number;
+  visitCount: number;
+  pageViewCount: number;
+  contentViewCount: number;
+  participationCount: number;
+  completionCount: number;
+  shareCount: number;
+  likeCount: number;
+};
+
+export type DailyActivity = {
+  date: string;
+  visitorCount: number;
+  visitCount: number;
+  pageViewCount: number;
+  contentViewCount: number;
+  participationCount: number;
+  completionCount: number;
+  shareCount: number;
+};
+
+export type ContentPerformance = {
+  contentCode: string;
+  name: string;
+  type: string;
+  status: string;
+  viewCount: number;
+  uniqueViewerCount: number;
+  participationCount: number;
+  completionCount: number;
+  completionRate: number;
+  shareCount: number;
+  likeCount: number;
+};
+
+export type ServiceDashboard = {
+  periodDays: number;
+  generatedAt: string;
+  summary: DashboardSummary;
+  daily: DailyActivity[];
+  contents: ContentPerformance[];
+};

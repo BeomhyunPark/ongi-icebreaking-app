@@ -15,6 +15,7 @@ import static app.ongi.sharing.engagement.EngagementDtos.VisitResponse;
 import static app.ongi.sharing.engagement.EngagementDtos.VisitorResponse;
 import static app.ongi.sharing.engagement.EngagementDtos.VisitorStatisticsResponse;
 
+import app.ongi.sharing.security.AdminAccessService;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,10 +36,16 @@ public class EngagementController {
 
     private final EngagementService engagementService;
     private final EngagementStatisticsService statisticsService;
+    private final AdminAccessService adminAccessService;
 
-    public EngagementController(EngagementService engagementService, EngagementStatisticsService statisticsService) {
+    public EngagementController(
+        EngagementService engagementService,
+        EngagementStatisticsService statisticsService,
+        AdminAccessService adminAccessService
+    ) {
         this.engagementService = engagementService;
         this.statisticsService = statisticsService;
+        this.adminAccessService = adminAccessService;
     }
 
     @PutMapping("/visitors/{visitorKey}")
@@ -102,8 +110,21 @@ public class EngagementController {
     }
 
     @GetMapping("/contents/{contentCode}/statistics")
-    ContentStatisticsResponse contentStatistics(@PathVariable String contentCode) {
+    ContentStatisticsResponse contentStatistics(
+        @PathVariable String contentCode,
+        @RequestHeader(name = "X-OnGi-Admin-Key", required = false) String adminKey
+    ) {
+        adminAccessService.requireAccess(adminKey);
         return statisticsService.contentStatistics(contentCode);
+    }
+
+    @GetMapping("/internal/dashboard")
+    EngagementStatisticsService.DashboardStatistics dashboard(
+        @RequestParam(defaultValue = "30") int days,
+        @RequestHeader(name = "X-OnGi-Admin-Key", required = false) String adminKey
+    ) {
+        adminAccessService.requireAccess(adminKey);
+        return statisticsService.dashboardStatistics(days);
     }
 
     @GetMapping("/share-links/{code}")

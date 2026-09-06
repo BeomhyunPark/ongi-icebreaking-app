@@ -8,7 +8,9 @@ import static app.ongi.sharing.engagement.EngagementDtos.VariantLikeStatistics;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.sql.Timestamp;
 import java.util.List;
 
 import app.ongi.sharing.common.ApiException;
@@ -19,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EngagementStatisticsService {
+
+    private static final ZoneId STATISTICS_ZONE = ZoneId.of("Asia/Seoul");
 
     private final ContentRepository contentRepository;
     private final ContentVersionRepository versionRepository;
@@ -97,14 +101,155 @@ public class EngagementStatisticsService {
     }
 
     @Transactional(readOnly = true)
-    public ServiceStatistics serviceStatistics() {
-        Instant today = clock.instant().truncatedTo(ChronoUnit.DAYS);
-        return new ServiceStatistics(
+    public DashboardStatistics dashboardStatistics(int requestedDays) {
+        int days = switch (requestedDays) {
+            case 7, 30, 90 -> requestedDays;
+            default -> 30;
+        };
+        LocalDate today = LocalDate.now(clock.withZone(STATISTICS_ZONE));
+        LocalDate firstDay = today.minusDays(days - 1L);
+        Instant start = firstDay.atStartOfDay(STATISTICS_ZONE).toInstant();
+        Instant end = today.plusDays(1).atStartOfDay(STATISTICS_ZONE).toInstant();
+        Instant todayStart = today.atStartOfDay(STATISTICS_ZONE).toInstant();
+        Timestamp startTimestamp = Timestamp.from(start);
+        Timestamp endTimestamp = Timestamp.from(end);
+        Timestamp todayStartTimestamp = Timestamp.from(todayStart);
+
+        long genericParticipations = count("SELECT count(*) FROM participation WHERE started_at >= ? AND started_at < ?", startTimestamp, endTimestamp);
+        long gureumiStarts = count("SELECT count(*) FROM gureumi_attempt WHERE started_at >= ? AND started_at < ?", startTimestamp, endTimestamp);
+        long genericCompletions = count("SELECT count(*) FROM participation WHERE completed_at >= ? AND completed_at < ?", startTimestamp, endTimestamp);
+        long gureumiCompletions = count("SELECT count(*) FROM gureumi_attempt WHERE completed_at >= ? AND completed_at < ?", startTimestamp, endTimestamp);
+
+        DashboardSummary summary = new DashboardSummary(
             count("SELECT count(*) FROM visitor"),
-            count("SELECT count(*) FROM visitor WHERE created_at >= ?", today),
-            count("SELECT count(*) FROM visit"),
-            count("SELECT count(*) FROM event_log WHERE event_type = 'PAGE_VIEW'")
+            count("SELECT count(DISTINCT visitor_id) FROM visit WHERE started_at >= ? AND started_at < ?", startTimestamp, endTimestamp),
+            count("SELECT count(DISTINCT visitor_id) FROM visit WHERE started_at >= ? AND started_at < ?", todayStartTimestamp, endTimestamp),
+            count("SELECT count(*) FROM visit WHERE started_at >= ? AND started_at < ?", startTimestamp, endTimestamp),
+            count("SELECT count(*) FROM event_log WHERE event_type = 'PAGE_VIEW' AND created_at >= ? AND created_at < ?", startTimestamp, endTimestamp),
+            count("SELECT count(*) FROM event_log WHERE event_type = 'CONTENT_VIEW' AND created_at >= ? AND created_at < ?", startTimestamp, endTimestamp),
+            genericParticipations + gureumiStarts,
+            genericCompletions + gureumiCompletions,
+            count("SELECT count(*) FROM event_log WHERE event_type = 'SHARE_CLICK' AND created_at >= ? AND created_at < ?", startTimestamp, endTimestamp),
+            count("SELECT count(*) FROM content_like")
         );
+
+        List<DailyActivity> daily = jdbcTemplate.query("""
+            WITH days(day) AS (
+                SELECT generate_series(CAST(? AS date), CAST(? AS date), interval '1 day')::date
+            ), visit_daily AS (
+                SELECT (started_at AT TIME ZONE 'Asia/Seoul')::date AS day,
+                       count(DISTINCT visitor_id) AS visitors,
+                       count(*) AS visits
+                FROM visit
+                WHERE started_at >= ? AND started_at < ?
+                GROUP BY 1
+            ), event_daily AS (
+                SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day,
+                       count(*) FILTER (WHERE event_type = 'PAGE_VIEW') AS page_views,
+                       count(*) FILTER (WHERE event_type = 'CONTENT_VIEW') AS content_views,
+                       count(*) FILTER (WHERE event_type = 'SHARE_CLICK') AS shares
+                FROM event_log
+                WHERE created_at >= ? AND created_at < ?
+                GROUP BY 1
+            ), participation_daily AS (
+                SELECT (started_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS starts
+                FROM participation
+                WHERE started_at >= ? AND started_at < ?
+                GROUP BY 1
+            ), completion_daily AS (
+                SELECT (completed_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS completions
+                FROM participation
+                WHERE completed_at >= ? AND completed_at < ?
+                GROUP BY 1
+            ), gureumi_start_daily AS (
+                SELECT (started_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS starts
+                FROM gureumi_attempt
+                WHERE started_at >= ? AND started_at < ?
+                GROUP BY 1
+            ), gureumi_completion_daily AS (
+                SELECT (completed_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS completions
+                FROM gureumi_attempt
+                WHERE completed_at >= ? AND completed_at < ?
+                GROUP BY 1
+            )
+            SELECT days.day,
+                   COALESCE(visit_daily.visitors, 0) AS visitors,
+                   COALESCE(visit_daily.visits, 0) AS visits,
+                   COALESCE(event_daily.page_views, 0) AS page_views,
+                   COALESCE(event_daily.content_views, 0) AS content_views,
+                   COALESCE(event_daily.shares, 0) AS shares,
+                   COALESCE(participation_daily.starts, 0) + COALESCE(gureumi_start_daily.starts, 0) AS participations,
+                   COALESCE(completion_daily.completions, 0) + COALESCE(gureumi_completion_daily.completions, 0) AS completions
+            FROM days
+            LEFT JOIN visit_daily ON visit_daily.day = days.day
+            LEFT JOIN event_daily ON event_daily.day = days.day
+            LEFT JOIN participation_daily ON participation_daily.day = days.day
+            LEFT JOIN completion_daily ON completion_daily.day = days.day
+            LEFT JOIN gureumi_start_daily ON gureumi_start_daily.day = days.day
+            LEFT JOIN gureumi_completion_daily ON gureumi_completion_daily.day = days.day
+            ORDER BY days.day
+            """, (resultSet, rowNumber) -> new DailyActivity(
+                resultSet.getObject("day", LocalDate.class),
+                resultSet.getLong("visitors"),
+                resultSet.getLong("visits"),
+                resultSet.getLong("page_views"),
+                resultSet.getLong("content_views"),
+                resultSet.getLong("participations"),
+                resultSet.getLong("completions"),
+                resultSet.getLong("shares")
+            ), firstDay, today, startTimestamp, endTimestamp, startTimestamp, endTimestamp,
+            startTimestamp, endTimestamp, startTimestamp, endTimestamp, startTimestamp, endTimestamp,
+            startTimestamp, endTimestamp);
+
+        List<ContentPerformance> contents = jdbcTemplate.query("""
+            SELECT content.code, content.name, content.type, content.status,
+                   (SELECT count(*) FROM event_log event
+                    WHERE event.content_id = content.id AND event.event_type = 'CONTENT_VIEW'
+                      AND event.created_at >= ? AND event.created_at < ?) AS views,
+                   (SELECT count(DISTINCT visit.visitor_id) FROM event_log event
+                    JOIN visit ON visit.id = event.visit_id
+                    WHERE event.content_id = content.id AND event.event_type = 'CONTENT_VIEW'
+                      AND event.created_at >= ? AND event.created_at < ?) AS viewers,
+                   CASE WHEN content.code = 'gureumi' THEN
+                       (SELECT count(*) FROM gureumi_attempt WHERE started_at >= ? AND started_at < ?)
+                   ELSE
+                       (SELECT count(*) FROM participation p JOIN content_version v ON v.id = p.version_id
+                        WHERE v.content_id = content.id AND p.started_at >= ? AND p.started_at < ?)
+                   END AS participations,
+                   CASE WHEN content.code = 'gureumi' THEN
+                       (SELECT count(*) FROM gureumi_attempt WHERE completed_at >= ? AND completed_at < ?)
+                   ELSE
+                       (SELECT count(*) FROM participation p JOIN content_version v ON v.id = p.version_id
+                        WHERE v.content_id = content.id AND p.completed_at >= ? AND p.completed_at < ?)
+                   END AS completions,
+                   (SELECT count(*) FROM event_log event
+                    WHERE event.content_id = content.id AND event.event_type = 'SHARE_CLICK'
+                      AND event.created_at >= ? AND event.created_at < ?) AS shares,
+                   (SELECT count(*) FROM content_like liked WHERE liked.content_id = content.id) AS likes
+            FROM content
+            WHERE content.status <> 'ARCHIVED'
+            ORDER BY views DESC, content.name
+            """, (resultSet, rowNumber) -> {
+                long participations = resultSet.getLong("participations");
+                long completions = resultSet.getLong("completions");
+                return new ContentPerformance(
+                    resultSet.getString("code"),
+                    resultSet.getString("name"),
+                    resultSet.getString("type"),
+                    resultSet.getString("status"),
+                    resultSet.getLong("views"),
+                    resultSet.getLong("viewers"),
+                    participations,
+                    completions,
+                    ratio(completions, participations),
+                    resultSet.getLong("shares"),
+                    resultSet.getLong("likes")
+                );
+            }, startTimestamp, endTimestamp, startTimestamp, endTimestamp, startTimestamp, endTimestamp,
+            startTimestamp, endTimestamp, startTimestamp, endTimestamp, startTimestamp, endTimestamp,
+            startTimestamp, endTimestamp);
+
+        return new DashboardStatistics(days, clock.instant(), summary, daily, contents);
     }
 
     @Transactional(readOnly = true)
@@ -171,7 +316,51 @@ public class EngagementStatisticsService {
         return denominator == 0 ? 0 : Math.round((numerator * 10000.0) / denominator) / 100.0;
     }
 
-    public record ServiceStatistics(long visitorCount, long todayVisitorCount, long visitCount, long pageViewCount) {}
+    public record DashboardStatistics(
+        int periodDays,
+        Instant generatedAt,
+        DashboardSummary summary,
+        List<DailyActivity> daily,
+        List<ContentPerformance> contents
+    ) {}
+
+    public record DashboardSummary(
+        long totalVisitorCount,
+        long periodVisitorCount,
+        long todayVisitorCount,
+        long visitCount,
+        long pageViewCount,
+        long contentViewCount,
+        long participationCount,
+        long completionCount,
+        long shareCount,
+        long likeCount
+    ) {}
+
+    public record DailyActivity(
+        LocalDate date,
+        long visitorCount,
+        long visitCount,
+        long pageViewCount,
+        long contentViewCount,
+        long participationCount,
+        long completionCount,
+        long shareCount
+    ) {}
+
+    public record ContentPerformance(
+        String contentCode,
+        String name,
+        String type,
+        String status,
+        long viewCount,
+        long uniqueViewerCount,
+        long participationCount,
+        long completionCount,
+        double completionRate,
+        long shareCount,
+        long likeCount
+    ) {}
 
     public record ResultCount(String resultCode, String resultName, long completionCount) {}
 

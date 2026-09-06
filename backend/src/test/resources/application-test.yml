@@ -4,6 +4,8 @@ spring:
 ongi:
   allowed-origins:
     - http://localhost:5173
+  admin:
+    key: test-admin-key
   session:
     secure-cookie: false
     tombstone-retention: 24h

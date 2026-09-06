@@ -77,6 +77,49 @@ function statisticsResponse() {
   };
 }
 
+function dashboardResponse() {
+  return {
+    periodDays: 30,
+    generatedAt: '2026-09-04T00:00:00Z',
+    summary: {
+      totalVisitorCount: 321,
+      periodVisitorCount: 120,
+      todayVisitorCount: 14,
+      visitCount: 160,
+      pageViewCount: 210,
+      contentViewCount: 150,
+      participationCount: 100,
+      completionCount: 70,
+      shareCount: 22,
+      likeCount: 44,
+    },
+    daily: [{
+      date: '2026-09-04', visitorCount: 14, visitCount: 18, pageViewCount: 24,
+      contentViewCount: 16, participationCount: 10, completionCount: 7, shareCount: 3,
+    }],
+    contents: [{
+      contentCode: 'heart-trace', name: '마음속 흔적 찾기', type: 'TEST', status: 'PUBLISHED',
+      viewCount: 80, uniqueViewerCount: 60, participationCount: 50, completionCount: 40,
+      completionRate: 80, shareCount: 10, likeCount: 20,
+    }],
+  };
+}
+
+function dashboardFetchMock() {
+  return vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
+    const url = new URL(String(input));
+    return url.pathname.includes('/engagement/internal/dashboard')
+      ? json(dashboardResponse())
+      : json(statisticsResponse());
+  });
+}
+
+async function signIn() {
+  fireEvent.change(screen.getByLabelText('관리자 키'), { target: { value: 'test-admin-key' } });
+  fireEvent.click(screen.getByRole('button', { name: '대시보드 열기' }));
+  await screen.findByRole('heading', { name: '온기 운영 대시보드', level: 1 });
+}
+
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
@@ -86,46 +129,49 @@ afterEach(() => {
 });
 
 describe('구르미 Beta 내부 통계', () => {
-  it('숨겨진 주소로 진입하면 키 없이 익명 집계를 바로 조회한다', async () => {
-    const fetchMock = vi.fn(async (
-      _input: string | URL | Request,
-      _init?: RequestInit,
-    ) => json(statisticsResponse()));
+  it('숨겨진 주소로 진입해도 관리자 키 없이는 집계를 요청하지 않는다', async () => {
+    const fetchMock = dashboardFetchMock();
     vi.stubGlobal('fetch', fetchMock);
     window.history.replaceState({}, '', '/?page=gureumi-beta-stats');
 
     const { container } = render(<App />);
 
-    expect(await screen.findByRole('heading', { name: '구르미 Beta 통계', level: 1 })).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(screen.queryByLabelText('관리자 키')).toBeNull();
+    expect(await screen.findByRole('heading', { name: '운영 대시보드', level: 1 })).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('관리자 키')).toBeTruthy();
+    await signIn();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const call of fetchMock.mock.calls) {
+      expect(new Headers(call[1]?.headers).get('X-OnGi-Admin-Key')).toBe('test-admin-key');
+    }
     expect((await axe.run(container, {
       rules: { 'color-contrast': { enabled: false } },
     })).violations).toEqual([]);
   });
 
   it('문항·축·결과·만족도를 표시하고 필터를 서버 조건으로 전달한다', async () => {
-    const fetchMock = vi.fn(async (
-      _input: string | URL | Request,
-      _init?: RequestInit,
-    ) => json(statisticsResponse()));
+    const fetchMock = dashboardFetchMock();
     vi.stubGlobal('fetch', fetchMock);
     window.history.replaceState({}, '', '/?page=gureumi-beta-stats');
     const { container } = render(<App />);
 
-    expect(await screen.findByRole('heading', { name: '구르미 Beta 통계', level: 1 })).toBeTruthy();
+    await signIn();
+    expect(screen.getByText('누적 방문자')).toBeTruthy();
+    expect(screen.getByText('321')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '콘텐츠별 성과' })).toBeTruthy();
     expect(screen.getByText('27번 상황')).toBeTruthy();
     expect(screen.getByRole('heading', { name: '축 분포와 Boundary' })).toBeTruthy();
     expect(screen.getByText('아롱이')).toBeTruthy();
     expect(screen.getByText('포근이')).toBeTruthy();
     expect(screen.getByText(/3.36 \/ 4/)).toBeTruthy();
-    expect(screen.getByText(/개인정보와 raw token은 표시하지 않음/)).toBeTruthy();
-    const firstCall = fetchMock.mock.calls[0];
-    const firstUrl = new URL(String(firstCall[0]));
+    expect(screen.getByText(/개별 사용자·토큰·개인정보는 표시하지 않습니다/)).toBeTruthy();
+    const statisticsCall = fetchMock.mock.calls.find(([input]) => String(input).includes('/gureumi/internal/statistics'));
+    expect(statisticsCall).toBeTruthy();
+    const firstUrl = new URL(String(statisticsCall?.[0]));
     expect(firstUrl.pathname).toBe('/api/gureumi/internal/statistics');
     expect(firstUrl.searchParams.get('completedAnswersOnly')).toBe('true');
     expect(firstUrl.searchParams.get('firstAttemptOnly')).toBe('true');
-    expect(new Headers(firstCall[1]?.headers).has('X-Gureumi-Admin-Key')).toBe(false);
+    expect(new Headers(statisticsCall?.[1]?.headers).get('X-OnGi-Admin-Key')).toBe('test-admin-key');
 
     fireEvent.click(screen.getByRole('button', { name: '완료자 응답' }));
     fireEvent.click(screen.getByRole('button', { name: '최초 검사' }));

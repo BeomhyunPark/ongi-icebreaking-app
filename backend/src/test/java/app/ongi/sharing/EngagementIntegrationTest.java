@@ -38,6 +38,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class EngagementIntegrationTest {
 
+    private static final String ADMIN_HEADER = "X-OnGi-Admin-Key";
+    private static final String ADMIN_KEY = "test-admin-key";
+
     @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -251,7 +254,8 @@ class EngagementIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code", is("INVALID_LIKE_VARIANT")));
 
-        mockMvc.perform(get("/api/engagement/contents/ideal-world-cup/statistics"))
+        mockMvc.perform(get("/api/engagement/contents/ideal-world-cup/statistics")
+                .header(ADMIN_HEADER, ADMIN_KEY))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.likeCount", is(1)))
             .andExpect(jsonPath("$.variantLikes[0].variantCode", is("meal")))
@@ -322,7 +326,8 @@ class EngagementIntegrationTest {
         completeParticipation(json(started).path("participationId").asLong(), visitKey, "pause").andExpect(status().isOk());
         like("heart-trace", visitorKey).andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/engagement/contents/heart-trace/statistics"))
+        mockMvc.perform(get("/api/engagement/contents/heart-trace/statistics")
+                .header(ADMIN_HEADER, ADMIN_KEY))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.contentViewCount", is(1)))
             .andExpect(jsonPath("$.uniqueViewerCount", is(1)))
@@ -366,7 +371,8 @@ class EngagementIntegrationTest {
             like(contentCode, visitorKey).andExpect(status().isOk());
             like(contentCode, visitorKey).andExpect(status().isOk());
 
-            mockMvc.perform(get("/api/engagement/contents/{contentCode}/statistics", contentCode))
+            mockMvc.perform(get("/api/engagement/contents/{contentCode}/statistics", contentCode)
+                    .header(ADMIN_HEADER, ADMIN_KEY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contentViewCount", is(2)))
                 .andExpect(jsonPath("$.uniqueViewerCount", is(1)))
@@ -382,9 +388,27 @@ class EngagementIntegrationTest {
             .andExpect(jsonPath("$.visitorCount", is(contentCodes.size())))
             .andExpect(jsonPath("$.visitors").doesNotExist());
 
-        mockMvc.perform(get("/api/engagement/contents/gureumi/statistics"))
+        mockMvc.perform(get("/api/engagement/contents/gureumi/statistics")
+                .header(ADMIN_HEADER, ADMIN_KEY))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.code", is("CONTENT_NOT_AVAILABLE")));
+
+        mockMvc.perform(get("/api/engagement/internal/dashboard"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code", is("ADMIN_ACCESS_DENIED")));
+
+        mockMvc.perform(get("/api/engagement/internal/dashboard")
+                .header(ADMIN_HEADER, ADMIN_KEY)
+                .queryParam("days", "7"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.periodDays", is(7)))
+            .andExpect(jsonPath("$.summary.totalVisitorCount", is(contentCodes.size())))
+            .andExpect(jsonPath("$.summary.contentViewCount", is(contentCodes.size() * 2)))
+            .andExpect(jsonPath("$.summary.participationCount", is(contentCodes.size())))
+            .andExpect(jsonPath("$.summary.completionCount", is(contentCodes.size())))
+            .andExpect(jsonPath("$.summary.shareCount", is(contentCodes.size())))
+            .andExpect(jsonPath("$.daily", org.hamcrest.Matchers.hasSize(7)))
+            .andExpect(jsonPath("$.contents", org.hamcrest.Matchers.hasSize(6)));
     }
 
     private org.springframework.test.web.servlet.ResultActions ensureVisitor(UUID visitorKey) throws Exception {

@@ -41,6 +41,8 @@ class GureumiIntegrationTest {
 
     private static final String CLIENT_HEADER = "X-OnGi-Client";
     private static final String RESUME_HEADER = "X-Gureumi-Resume-Token";
+    private static final String ADMIN_HEADER = "X-OnGi-Admin-Key";
+    private static final String ADMIN_KEY = "test-admin-key";
     private static final UUID V01_ID = UUID.fromString("30000000-0000-0000-0000-000000000001");
     private static final UUID V02_ID = UUID.fromString("30000000-0000-0000-0000-000000000002");
 
@@ -297,7 +299,12 @@ class GureumiIntegrationTest {
                 .andExpect(status().isOk());
         }
 
-        MvcResult response = mockMvc.perform(get("/api/gureumi/internal/statistics"))
+        mockMvc.perform(get("/api/gureumi/internal/statistics"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code", is("ADMIN_ACCESS_DENIED")));
+
+        MvcResult response = mockMvc.perform(get("/api/gureumi/internal/statistics")
+                .header(ADMIN_HEADER, ADMIN_KEY))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.version", is("GUREUMI_BETA_V01")))
             .andExpect(jsonPath("$.completedAnswersOnly", is(true)))
@@ -324,6 +331,7 @@ class GureumiIntegrationTest {
             .doesNotContain("resumeToken", "resume_token", "attemptId", "tokenHash");
 
         mockMvc.perform(get("/api/gureumi/internal/statistics")
+                .header(ADMIN_HEADER, ADMIN_KEY)
                 .queryParam("completedAnswersOnly", "false"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.questions[0].responseCount", is(2)))

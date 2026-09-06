@@ -20,6 +20,7 @@ class JoinRateLimiterTest {
     void limitsRepeatedRoomCodeAttemptsFromSameSource() {
         OngiProperties properties = new OngiProperties(
             List.of("http://localhost:5173"),
+            new OngiProperties.Admin("test-admin-key"),
             new OngiProperties.Session(false, Duration.ofHours(24)),
             new OngiProperties.Room(Duration.ofHours(12), 2, 10),
             new OngiProperties.Realtime(Duration.ofMinutes(10), Duration.ofSeconds(20)),
@@ -45,6 +46,7 @@ class JoinRateLimiterTest {
     void usesCloudflareConnectingIpOnlyWhenExplicitlyTrusted() {
         OngiProperties properties = new OngiProperties(
             List.of("https://ongi.greengroove.app"),
+            new OngiProperties.Admin("test-admin-key"),
             new OngiProperties.Session(true, Duration.ofHours(24)),
             new OngiProperties.Room(Duration.ofHours(12), 2, 10),
             new OngiProperties.Realtime(Duration.ofMinutes(10), Duration.ofSeconds(20)),
@@ -73,6 +75,7 @@ class JoinRateLimiterTest {
     void doesNotLimitAttemptsAcrossDifferentRoomCodes() {
         OngiProperties properties = new OngiProperties(
             List.of("https://ongi.greengroove.app"),
+            new OngiProperties.Admin("test-admin-key"),
             new OngiProperties.Session(true, Duration.ofHours(24)),
             new OngiProperties.Room(Duration.ofHours(12), 2, 10),
             new OngiProperties.Realtime(Duration.ofMinutes(10), Duration.ofSeconds(20)),

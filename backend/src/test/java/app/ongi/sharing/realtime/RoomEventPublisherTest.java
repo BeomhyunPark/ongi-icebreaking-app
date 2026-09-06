@@ -18,6 +18,7 @@ class RoomEventPublisherTest {
     void completingOneRoomDoesNotCloseAnotherRoomsSubscribers() {
         OngiProperties properties = new OngiProperties(
             List.of("http://localhost:5173"),
+            new OngiProperties.Admin("test-admin-key"),
             new OngiProperties.Session(false, Duration.ofHours(24)),
             new OngiProperties.Room(Duration.ofHours(12), 2, 10),
             new OngiProperties.Realtime(Duration.ofMinutes(10), Duration.ofSeconds(20)),

@@ -80,6 +80,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (activePage === 'gureumi-beta-stats') return;
     void initializeEngagement();
     const contentCode = activeActivity ? getEngagementContentCode(activeActivity) : null;
     const locationKey = contentCode ?? (activePage ? `page:${activePage}` : 'home');

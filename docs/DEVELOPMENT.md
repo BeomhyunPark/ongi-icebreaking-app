@@ -133,7 +133,9 @@ GET    /api/engagement/share-links/{code}
 
 ### 구르미 Beta 내부 통계
 
-`/?page=gureumi-beta-stats`는 공개 메뉴에 등록하지 않은 desktop 집계 화면입니다. 별도 인증 없이 바로 열리며, URL을 아는 사람의 접근을 기술적으로 차단하지는 않습니다.
+`/?page=gureumi-beta-stats`는 공개 메뉴에 등록하지 않은 데스크톱 운영 대시보드입니다. 전체 방문자·세션·페이지 조회·콘텐츠별 시작/완료/공유/좋아요와 구르미 문항 품질 통계를 함께 표시합니다.
+
+백엔드에 `ONGI_ADMIN_KEY`를 설정해야 하며, 브라우저가 전송하는 `X-OnGi-Admin-Key`와 일치할 때만 내부 통계 API가 응답합니다. 키는 프론트엔드 빌드에 포함하지 않고 대시보드 탭의 `sessionStorage`에만 보관합니다.
 
 화면은 문항 choice·평균 응답 시간, 축 HIGH/LOW·boundary, 8종 결과, 결과별·전체 만족도, funnel을 익명 집계로 보여줍니다. 개별 attempt와 token은 내부 API에서도 반환하지 않습니다. 상세한 집계 의미와 보호 경계는 [GUREUMI Beta 구현 메모](./gureumi/beta-implementation.md)를 참고하세요.
 

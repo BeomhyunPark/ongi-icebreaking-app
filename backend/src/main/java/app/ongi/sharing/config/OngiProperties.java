@@ -8,11 +8,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("ongi")
 public record OngiProperties(
     List<String> allowedOrigins,
+    Admin admin,
     Session session,
     Room room,
     Realtime realtime,
     RateLimit rateLimit
 ) {
+    public record Admin(String key) {}
+
     public record Session(boolean secureCookie, Duration tombstoneRetention) {}
 
     public record Room(Duration activeLifetime, int minimumParticipants, int maximumParticipants) {}

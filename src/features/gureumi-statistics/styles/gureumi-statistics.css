@@ -1,12 +1,12 @@
 .gureumi-stats-page,
 .gureumi-stats-access,
 .gureumi-stats-loading {
-  --stats-bg: #eef5ff;
+  --stats-bg: #f3f6fb;
   --stats-surface: #ffffff;
-  --stats-text: #2e3b55;
-  --stats-muted: #6f7f9d;
-  --stats-border: #dde8f6;
-  --stats-primary: #6b86ea;
+  --stats-text: #1c2940;
+  --stats-muted: #6d7a91;
+  --stats-border: #dde4ef;
+  --stats-primary: #4169e1;
   box-sizing: border-box;
   min-height: 100dvh;
   color: var(--stats-text);
@@ -21,10 +21,10 @@
 }
 
 .gureumi-stats-workspace {
-  width: min(100%, 1440px);
-  min-width: 1120px;
+  width: min(100%, 1600px);
+  min-width: 1200px;
   margin: 0 auto;
-  padding: 36px 28px 48px;
+  padding: 34px 42px 64px;
 }
 
 .gureumi-stats-header {
@@ -42,8 +42,16 @@
 }
 
 .gureumi-stats-header h1 {
-  font-size: 24px;
-  line-height: 34px;
+  font-size: 28px;
+  line-height: 38px;
+}
+
+.gureumi-stats-header > div:first-child > small,
+.gureumi-stats-beta-heading small {
+  color: var(--stats-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .gureumi-stats-header p,
@@ -101,6 +109,224 @@
   color: var(--stats-muted);
 }
 
+.gureumi-stats-overview {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.gureumi-stats-overview article {
+  display: grid;
+  min-height: 132px;
+  align-content: space-between;
+  border: 1px solid var(--stats-border);
+  border-radius: 16px;
+  padding: 19px 20px;
+  background: var(--stats-surface);
+  box-shadow: 0 7px 22px rgba(28, 41, 64, 0.035);
+}
+
+.gureumi-stats-overview article:first-child {
+  color: #fff;
+  border-color: #3158cf;
+  background: linear-gradient(145deg, #3158cf, #5378e7);
+}
+
+.gureumi-stats-overview span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gureumi-stats-overview strong {
+  margin-top: 10px;
+  font-size: 30px;
+  line-height: 38px;
+}
+
+.gureumi-stats-overview small {
+  color: var(--stats-muted);
+  font-size: 11px;
+}
+
+.gureumi-stats-overview article:first-child small {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.gureumi-stats-traffic,
+.gureumi-stats-content {
+  margin-top: 20px;
+  border-radius: 18px;
+}
+
+.gureumi-stats-traffic > header,
+.gureumi-stats-content > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.gureumi-stats-legend {
+  display: flex;
+  gap: 18px;
+  color: var(--stats-muted);
+  font-size: 11px;
+}
+
+.gureumi-stats-legend span::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--stats-primary);
+  content: "";
+}
+
+.gureumi-stats-legend span:last-child::before {
+  background: #9db2ee;
+}
+
+.gureumi-stats-chart {
+  display: grid;
+  height: 260px;
+  align-items: stretch;
+  gap: 5px;
+  margin-top: 24px;
+  border-bottom: 1px solid var(--stats-border);
+  padding: 0 4px;
+}
+
+.gureumi-stats-chart__day {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 220px 24px;
+  gap: 7px;
+}
+
+.gureumi-stats-chart__day > div {
+  position: relative;
+  display: flex;
+  height: 220px;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  border-bottom: 1px solid #edf1f7;
+}
+
+.gureumi-stats-chart__day i,
+.gureumi-stats-chart__day b {
+  display: block;
+  width: min(9px, 44%);
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--stats-primary);
+}
+
+.gureumi-stats-chart__day b {
+  background: #9db2ee;
+}
+
+.gureumi-stats-chart__day small {
+  color: var(--stats-muted);
+  font-size: 9px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gureumi-stats-daily-table {
+  max-height: 254px;
+  margin-top: 22px;
+  overflow: auto;
+}
+
+.gureumi-stats-daily-table table,
+.gureumi-stats-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.gureumi-stats-daily-table th,
+.gureumi-stats-daily-table td,
+.gureumi-stats-content th,
+.gureumi-stats-content td {
+  border-bottom: 1px solid #edf1f7;
+  padding: 10px 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gureumi-stats-daily-table th,
+.gureumi-stats-content th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  color: var(--stats-muted);
+  background: #f7f9fc;
+  font-weight: 700;
+}
+
+.gureumi-stats-daily-table th:first-child,
+.gureumi-stats-daily-table td:first-child,
+.gureumi-stats-content th:first-child,
+.gureumi-stats-content td:first-child {
+  text-align: left;
+}
+
+.gureumi-stats-content td:first-child strong,
+.gureumi-stats-content td:first-child small {
+  display: block;
+}
+
+.gureumi-stats-content td:first-child small {
+  margin-top: 3px;
+  color: var(--stats-muted);
+  font-size: 10px;
+}
+
+.gureumi-stats-content td:nth-child(2) span {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #25775a;
+  background: #e7f6ef;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.gureumi-stats-content td:nth-child(2) span.is-draft {
+  color: #8b6c20;
+  background: #fff5d9;
+}
+
+.gureumi-stats-beta-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-top: 48px;
+  border-top: 1px solid var(--stats-border);
+  padding-top: 34px;
+}
+
+.gureumi-stats-beta-heading h2,
+.gureumi-stats-beta-heading p {
+  margin: 0;
+}
+
+.gureumi-stats-beta-heading h2 {
+  margin-top: 4px;
+  font-size: 24px;
+}
+
+.gureumi-stats-beta-heading p {
+  margin-top: 5px;
+  color: var(--stats-muted);
+  font-size: 13px;
+}
+
 .gureumi-stats-filters button:focus-visible,
 .gureumi-stats-filters select:focus-visible,
 .gureumi-stats-access input:focus-visible,
@@ -122,13 +348,13 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .gureumi-stats-funnel__card {
-  min-height: 120px;
+  min-height: 105px;
   border: 1px solid var(--stats-border);
-  border-radius: 24px;
+  border-radius: 16px;
   padding: 20px;
   background: var(--stats-surface);
 }
@@ -164,7 +390,7 @@
 
 .gureumi-stats-panel {
   border: 1px solid var(--stats-border);
-  border-radius: 24px;
+  border-radius: 18px;
   padding: 24px;
   background: var(--stats-surface);
 }
