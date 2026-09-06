@@ -113,6 +113,10 @@ export const sharingApi = {
     })
   ),
 
+  reopenResponses: (roomId: string) => request<MyResponses>(
+    `/api/rooms/${roomId}/responses/reopen`, { method: 'POST' },
+  ),
+
   completeResponses: (roomId: string) => request<MyResponses>(
     `/api/rooms/${roomId}/responses/complete`,
     { method: 'POST' },

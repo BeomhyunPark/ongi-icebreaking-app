@@ -342,6 +342,19 @@ class RoomParticipantIntegrationTest {
             .andExpect(jsonPath("$.completedParticipantCount", is(2)))
             .andReturn();
 
+        mockMvc.perform(post("/api/rooms/{roomId}/responses/reopen", roomId)
+                .cookie(one).header("X-OnGi-Client", "web"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.completed", is(false)));
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).cookie(host))
+            .andExpect(jsonPath("$.completedParticipantCount", is(1)));
+        mockMvc.perform(post("/api/rooms/{roomId}/start-sharing", roomId)
+                .cookie(host).header("X-OnGi-Client", "web")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedVersion\":" + objectMapper.readTree(locked.getResponse().getContentAsString()).path("version").asLong() + "}"))
+            .andExpect(status().isConflict());
+        saveAnswer(roomId, one, questionId, "수정한 답변");
+        completeAnswers(roomId, one);
+
         long lockedVersion = objectMapper.readTree(locked.getResponse().getContentAsString()).path("version").asLong();
         MvcResult started = mockMvc.perform(post("/api/rooms/{roomId}/start-sharing", roomId)
                 .cookie(host)
@@ -352,6 +365,11 @@ class RoomParticipantIntegrationTest {
             .andExpect(jsonPath("$.state", is("ANONYMOUS")))
             .andExpect(jsonPath("$.participantName").doesNotExist())
             .andReturn();
+
+        mockMvc.perform(post("/api/rooms/{roomId}/responses/reopen", roomId)
+                .cookie(one).header("X-OnGi-Client", "web"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code", is("RESPONSES_NOT_WRITABLE")));
 
         String anonymousJson = started.getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(anonymousJson)

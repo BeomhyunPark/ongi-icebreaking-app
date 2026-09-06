@@ -96,6 +96,7 @@ export const engagementApi = {
 
   getLike: (contentCode: EngagementContentCode, variantCode: string, visitorKey: string) => request<LikeResponse>(
     `/api/engagement/contents/${contentCode}/like?visitorKey=${encodeURIComponent(visitorKey)}&variant=${encodeURIComponent(variantCode)}`,
+    { cache: 'no-store' },
   ),
 
   setLike: (

@@ -5,6 +5,8 @@
     radial-gradient(circle at 15% 5%, rgba(120, 226, 198, 0.2), transparent 28rem),
     linear-gradient(180deg, #102f3e 0%, #252052 56%, #31164c 100%);
   color: var(--ongi-cream-50);
+  height: 100dvh;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -614,3 +616,46 @@
     transition: none;
   }
 }
+
+.anonymous-sharing-guide,
+.anonymous-sharing-secret {
+  margin: 1.5rem 0;
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(120, 226, 198, 0.24);
+  border-radius: 1rem;
+  background: rgba(10, 20, 43, 0.7);
+  color: var(--ongi-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  text-align: left;
+}
+.anonymous-sharing-guide strong,
+.anonymous-sharing-secret strong { color: var(--sharing-mint); }
+.anonymous-sharing-guide ol { margin: 0.75rem 0 0; padding-left: 1.25rem; }
+.anonymous-sharing-guide li + li { margin-top: 0.65rem; }
+.anonymous-sharing-secret p { margin: 0.5rem 0 0; }
+.anonymous-sharing-reveal {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  padding: 0.875rem 0 max(0.875rem, env(safe-area-inset-bottom));
+  background: #242049;
+  border-radius: 1rem;
+}
+.anonymous-sharing-reveal > button,
+.anonymous-sharing-edit,
+.anonymous-sharing-reveal-confirm > button {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--sharing-mint);
+  border-radius: 1rem;
+  background: #254b52;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+}
+.anonymous-sharing-edit { margin-top: 1.5rem; }
+.anonymous-sharing-entry { padding-top: clamp(1.5rem, 6vh, 3rem); }
+.anonymous-sharing-entry-actions { margin-top: 1.5rem; }
+.anonymous-sharing-screen button:disabled { opacity: 0.5; cursor: not-allowed; }

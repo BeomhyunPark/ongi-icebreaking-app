@@ -75,11 +75,11 @@ describe('놀이와 도구 링크 공유', () => {
     const likeButton = await screen.findByRole('button', { name: '좋아요 추가 · 현재 0개' });
     fireEvent.click(likeButton);
     expect(await screen.findByRole('button', { name: '좋아요 취소 · 현재 1개' })).toBeTruthy();
-    expect(screen.queryByText('좋아요를 남겼어요.')).toBeNull();
+    expect(await screen.findByText('좋아요를 저장했어요. 다음에 방문해도 유지돼요.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '좋아요 취소 · 현재 1개' }));
     expect(await screen.findByRole('button', { name: '좋아요 추가 · 현재 0개' })).toBeTruthy();
-    expect(screen.queryByText('좋아요를 취소했어요.')).toBeNull();
+    expect(await screen.findByText('좋아요를 취소했어요. 누적 수에서 1개가 빠져요.')).toBeTruthy();
   });
 
   it('밸런스 게임의 가볍게와 조금 깊게 좋아요를 따로 유지한다', async () => {

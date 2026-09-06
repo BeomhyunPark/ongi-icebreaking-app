@@ -46,6 +46,10 @@ public class Participant {
         this.joinedAt = joinedAt;
     }
 
+    public void reopenResponses() {
+        this.responseCompleted = false;
+    }
+
     public void completeResponses() {
         this.responseCompleted = true;
     }

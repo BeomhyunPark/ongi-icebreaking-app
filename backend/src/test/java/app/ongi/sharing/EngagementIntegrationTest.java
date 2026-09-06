@@ -176,6 +176,46 @@ class EngagementIntegrationTest {
     }
 
     @Test
+    void differentVisitorsAddIndependentLikesAndCannotRemoveEachOthersLikes() throws Exception {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        UUID third = UUID.randomUUID();
+        like("anonymous-sharing", first)
+            .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount", is(1)));
+        mockMvc.perform(get("/api/engagement/contents/anonymous-sharing/like")
+                .param("visitorKey", second.toString()).param("variant", "default"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.liked", is(false)))
+            .andExpect(jsonPath("$.likeCount", is(1)));
+        like("anonymous-sharing", second)
+            .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount", is(2)));
+        like("anonymous-sharing", second)
+            .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount", is(2)));
+        unlike("anonymous-sharing", third)
+            .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount", is(2)));
+        unlike("anonymous-sharing", second)
+            .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount", is(1)));
+        mockMvc.perform(get("/api/engagement/contents/anonymous-sharing/like")
+                .param("visitorKey", first.toString()).param("variant", "default"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.liked", is(true)))
+            .andExpect(jsonPath("$.likeCount", is(1)));
+    }
+
+    @Test
+    void includesLikesFromPreviousDaysAndPreservesVisitorLikeAcrossVisits() throws Exception {
+        UUID visitor = UUID.randomUUID();
+        like("anonymous-sharing", visitor).andExpect(status().isOk());
+        jdbcTemplate.update("UPDATE content_like SET created_at = CURRENT_TIMESTAMP - INTERVAL '30 days'");
+        ensureVisit(UUID.randomUUID(), visitor, null).andExpect(status().isOk());
+        like("anonymous-sharing", UUID.randomUUID()).andExpect(status().isOk());
+        mockMvc.perform(get("/api/engagement/contents/anonymous-sharing/like")
+                .param("visitorKey", visitor.toString()).param("variant", "default"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.liked", is(true)))
+            .andExpect(jsonPath("$.likeCount", is(2)));
+    }
+
+    @Test
     void keepsLikesIndependentForContentVariants() throws Exception {
         UUID visitorKey = UUID.randomUUID();
         ensureVisitor(visitorKey).andExpect(status().isOk());

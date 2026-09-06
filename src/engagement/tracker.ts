@@ -261,7 +261,7 @@ export async function getContentLike(
   variantCode: string,
 ): Promise<LikeResponse> {
   if (TEST_MODE) return { variantCode, liked: false, likeCount: 0 };
-  const identity = await ensureSession();
+  const identity = getEngagementIdentity();
   const response = await engagementApi.getLike(contentCode, variantCode, identity.visitorKey);
   cacheLike(contentCode, response);
   return response;
@@ -285,7 +285,7 @@ export async function setContentLike(
   liked: boolean,
 ): Promise<LikeResponse> {
   if (TEST_MODE) return { variantCode, liked, likeCount: liked ? 1 : 0 };
-  const identity = await ensureSession();
+  const identity = getEngagementIdentity();
   const response = await engagementApi.setLike(contentCode, variantCode, identity.visitorKey, liked);
   cacheLike(contentCode, response);
   return response;

@@ -19,6 +19,7 @@ function json(data: unknown, status = 200) {
 describe('익명 자기소개 나눔', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
     vi.stubGlobal('EventSource', undefined);
   });
@@ -366,7 +367,7 @@ describe('익명 자기소개 나눔', () => {
     expect(revealed).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: '네, 제 이름을 공개할게요' }));
 
-    expect(await screen.findByRole('heading', { name: '은혜' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '은혜님의 이야기예요' })).toBeTruthy();
     expect(revealed).toBe(true);
   });
 
@@ -403,7 +404,9 @@ describe('익명 자기소개 나눔', () => {
     render(<AnonymousSharingApp onBackHome={vi.fn()} />);
 
     expect(await screen.findByText('작성자가 준비되면 직접 자신을 공개해요.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '이거 저예요' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '이거 저예요' }));
+    expect(await screen.findByText('이번 이야기는 다른 분의 이야기예요')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '네, 제 이름을 공개할게요' })).toBeNull();
   });
 
   it('마지막 이야기에는 나눔 끝내기를 표시하고 종료 준비 화면에는 회차를 숨긴다', async () => {

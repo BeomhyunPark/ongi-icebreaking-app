@@ -48,6 +48,11 @@ public class ResponseController {
         return responseService.save(access, body.answers());
     }
 
+    @PostMapping("/responses/reopen")
+    MyResponsesResponse reopen(@PathVariable UUID roomId, HttpServletRequest request) {
+        return responseService.reopen(authorizationService.requireParticipant(request, roomId));
+    }
+
     @PostMapping("/responses/complete")
     MyResponsesResponse complete(@PathVariable UUID roomId, HttpServletRequest request) {
         RoomAccess access = authorizationService.requireParticipant(request, roomId);

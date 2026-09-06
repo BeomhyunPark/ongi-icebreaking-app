@@ -116,6 +116,19 @@ public class ResponseService {
         return mine(access);
     }
 
+    @Transactional
+    public MyResponsesResponse reopen(RoomAccess access) {
+        Room room = roomRepository.findByIdForUpdate(access.roomId())
+            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
+        if (room.getStatus() != RoomStatus.WRITING && room.getStatus() != RoomStatus.LOCKED) {
+            throw new ApiException(HttpStatus.CONFLICT, "RESPONSES_NOT_WRITABLE", "나눔이 시작되어 답변을 수정할 수 없어요.");
+        }
+        Participant participant = requireParticipant(access);
+        participant.reopenResponses();
+        eventPublisher.publishAfterCommit(room.getPublicId(), RoomEventType.PARTICIPANT_PROGRESS_CHANGED, room.getVersion());
+        return mine(access);
+    }
+
     private Room requireRoom(RoomAccess access) {
         return roomRepository.findById(access.roomId())
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
