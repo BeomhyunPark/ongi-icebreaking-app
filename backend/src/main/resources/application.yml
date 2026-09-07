@@ -44,7 +44,7 @@ ongi:
     tombstone-retention: ${ONGI_TOMBSTONE_RETENTION:24h}
   room:
     active-lifetime: ${ONGI_ROOM_ACTIVE_LIFETIME:12h}
-    minimum-participants: ${ONGI_MIN_PARTICIPANTS:2}
+    minimum-participants: ${ONGI_MIN_PARTICIPANTS:3}
     maximum-participants: ${ONGI_MAX_PARTICIPANTS:10}
   realtime:
     timeout: ${ONGI_SSE_TIMEOUT:10m}

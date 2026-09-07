@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/gureumi/internal")
+
 class GureumiStatisticsController {
 
     private final GureumiStatisticsService statisticsService;

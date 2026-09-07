@@ -6,9 +6,9 @@
   flex-direction: column;
   isolation: isolate;
   overflow: hidden;
-  padding: calc(1.5rem + env(safe-area-inset-top))
+  padding: calc(1rem + env(safe-area-inset-top))
     calc(var(--space-page) + env(safe-area-inset-right))
-    calc(2rem + env(safe-area-inset-bottom))
+    calc(1.5rem + env(safe-area-inset-bottom))
     calc(var(--space-page) + env(safe-area-inset-left));
   background: linear-gradient(180deg, #0c253f 0%, #1a334f 24%, #221556 85%, #26114f 100%);
 }
@@ -27,7 +27,7 @@
 }
 
 .screen-layout__footer {
-  padding-top: 1.25rem;
+  padding-top: 0.875rem;
 }
 
 .app-background {
@@ -162,9 +162,9 @@
 }
 
 .activity-link-share {
-  position: absolute;
+  position: fixed;
   z-index: 20;
-  top: calc(1.5rem + env(safe-area-inset-top));
+  top: calc(1rem + env(safe-area-inset-top));
   right: calc(var(--space-page) + env(safe-area-inset-right));
   display: flex;
   align-items: center;

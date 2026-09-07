@@ -10,7 +10,7 @@
 
 ```text
 Room 생성
-→ QR/Room Code 공유
+→ QR 공유
 → 필요하면 진행자도 이름을 입력하고 참여
 → 참여 현황 확인
 → 입장 마감(LOCKED, 나눔 시작 전 다시 열기 가능)
@@ -25,7 +25,7 @@ Room 생성
 ### Participant
 
 ```text
-QR 또는 Room Code
+QR 스캔
 → 이름 입력 및 session 발급
 → 한 질문씩 작성/중간 저장
 → 작성 완료

@@ -9,6 +9,8 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
 .anonymous-sharing-screen.is-centered .screen-layout__content {
@@ -17,6 +19,9 @@
 }
 
 .anonymous-sharing-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   min-height: 3rem;
   align-items: center;
@@ -51,7 +56,7 @@
   display: grid;
   width: 5.5rem;
   height: 5.5rem;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
   border: 1px solid rgba(120, 226, 198, 0.55);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(120, 226, 198, 0.22), rgba(180, 160, 255, 0.08));
@@ -67,7 +72,7 @@
 .anonymous-sharing-waiting h1,
 .anonymous-sharing-story h1,
 .anonymous-sharing-completed h1 {
-  margin: 0.75rem 0 1rem;
+  margin: 0.5rem 0 0.75rem;
   font-family: var(--font-family-display);
   font-size: clamp(2rem, 9vw, 2.75rem);
   font-weight: 400;
@@ -85,13 +90,12 @@
 
 .anonymous-sharing-entry-actions {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 3rem;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
 }
 
 .anonymous-sharing-entry-actions > button:not(.primary-button),
 .anonymous-sharing-form > button:not(.primary-button),
-.anonymous-sharing-invite > button,
 .anonymous-sharing-writing-actions > button:not(.primary-button),
 .anonymous-sharing-lobby-actions > button:not(.primary-button),
 .anonymous-sharing-host-participation > button {
@@ -105,9 +109,9 @@
 
 .anonymous-sharing-form {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 3rem;
-  padding: 1.5rem;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  padding: 1.125rem;
   border: 1px solid rgba(120, 226, 198, 0.24);
   border-radius: var(--ongi-radius-card);
   background: rgba(18, 25, 55, 0.72);
@@ -115,7 +119,7 @@
 }
 
 .anonymous-sharing-form h2 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.375rem;
   font-family: var(--font-family-display);
   font-size: 1.75rem;
   font-weight: 400;
@@ -152,14 +156,6 @@
   padding: 0 1rem;
 }
 
-.anonymous-sharing-form input.is-code {
-  color: var(--sharing-mint);
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .anonymous-sharing-form input:focus,
 .anonymous-sharing-writing textarea:focus {
   border-color: var(--sharing-mint);
@@ -171,13 +167,13 @@
 .anonymous-sharing-waiting,
 .anonymous-sharing-story,
 .anonymous-sharing-completed {
-  padding-top: 2.5rem;
+  padding-top: 1.5rem;
 }
 
 .anonymous-sharing-invite {
   display: grid;
-  margin: 1.5rem 0;
-  padding: 1.25rem;
+  margin: 1rem 0;
+  padding: 1rem;
   border: 1px solid rgba(120, 226, 198, 0.28);
   border-radius: var(--ongi-radius-card);
   background: rgba(10, 20, 43, 0.62);
@@ -192,25 +188,6 @@
   line-height: 0;
 }
 
-.anonymous-sharing-invite > span {
-  margin-top: 1rem;
-  color: var(--ongi-text-secondary);
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-}
-
-.anonymous-sharing-invite > strong {
-  margin: 0.25rem 0 0.75rem;
-  color: var(--sharing-mint);
-  font-size: 1.75rem;
-  letter-spacing: 0.12em;
-}
-
-.anonymous-sharing-invite > button {
-  min-height: 2.5rem;
-  padding-inline: 1rem;
-}
-
 .anonymous-sharing-invite > p {
   min-height: 1.25rem;
   margin: 0.5rem 0 0;
@@ -218,9 +195,47 @@
   font-size: 0.75rem;
 }
 
+.anonymous-sharing-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0.875rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.anonymous-sharing-flow li {
+  display: grid;
+  gap: 0.35rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.anonymous-sharing-flow li span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  place-items: center;
+  font-size: 0.6875rem;
+}
+
+.anonymous-sharing-flow li.is-active {
+  color: var(--sharing-mint);
+}
+
+.anonymous-sharing-flow li.is-active span {
+  border-color: var(--sharing-mint);
+  background: rgba(120, 226, 198, 0.14);
+}
+
 .anonymous-sharing-locked {
-  margin: 1.25rem 0;
-  padding: 1rem;
+  margin: 0.875rem 0;
+  padding: 0.875rem;
   border-radius: 1rem;
   background: rgba(120, 226, 198, 0.12);
   color: var(--sharing-mint);
@@ -229,9 +244,9 @@
 
 .anonymous-sharing-host-participation {
   display: grid;
-  gap: 0.65rem;
-  margin: 1rem 0 1.5rem;
-  padding: 1rem;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0.875rem;
   border: 1px solid rgba(180, 160, 255, 0.24);
   border-radius: 1rem;
   background: rgba(17, 24, 56, 0.46);
@@ -270,7 +285,7 @@
 }
 
 .anonymous-sharing-host-back {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   padding: 0;
   border: 0;
   background: transparent;
@@ -279,8 +294,8 @@
 }
 
 .anonymous-sharing-cancel-room {
-  margin-top: 2.25rem;
-  padding-top: 1.25rem;
+  margin-top: 1.5rem;
+  padding-top: 0.875rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
 }
@@ -339,7 +354,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin: 1.5rem 0 0.75rem;
+  margin: 1rem 0 0.5rem;
 }
 
 .anonymous-sharing-progress-summary strong {
@@ -353,8 +368,8 @@
 
 .anonymous-sharing-participants {
   display: grid;
-  gap: 0.5rem;
-  margin: 0 0 1.25rem;
+  gap: 0.375rem;
+  margin: 0 0 0.875rem;
   padding: 0;
   list-style: none;
 }
@@ -391,7 +406,7 @@
 .anonymous-sharing-step {
   position: relative;
   height: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   border-bottom: 3px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -412,7 +427,7 @@
 
 .anonymous-sharing-writing textarea {
   resize: vertical;
-  min-height: 11rem;
+  min-height: 7rem;
   padding: 1rem;
   line-height: 1.7;
 }
@@ -421,17 +436,17 @@
   display: grid;
   grid-template-columns: 0.7fr 1.3fr;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .anonymous-sharing-writing > small {
   display: block;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .anonymous-sharing-waiting,
 .anonymous-sharing-completed {
-  padding-top: clamp(5rem, 18vh, 9rem);
+  padding-top: clamp(3rem, 12vh, 6rem);
   text-align: center;
 }
 
@@ -444,7 +459,7 @@
 
 .anonymous-sharing-completed-actions {
   width: 100%;
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .anonymous-sharing-completed-actions .primary-button {
@@ -471,7 +486,7 @@
 
 .anonymous-sharing-waiting > strong {
   display: inline-block;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   padding: 0.75rem 1rem;
   border-radius: 999px;
   background: rgba(120, 226, 198, 0.12);
@@ -479,7 +494,7 @@
 }
 
 .anonymous-sharing-round {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   color: var(--sharing-mint);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -497,12 +512,12 @@
 
 .anonymous-sharing-answer-list {
   display: grid;
-  gap: 0.75rem;
-  margin: 1.75rem 0;
+  gap: 0.625rem;
+  margin: 1.25rem 0;
 }
 
 .anonymous-sharing-answer-list article {
-  padding: 1.125rem;
+  padding: 1rem;
   border: 1px solid rgba(180, 160, 255, 0.22);
   border-radius: 1.125rem;
   background: rgba(14, 20, 48, 0.6);
@@ -521,7 +536,7 @@
 }
 
 .anonymous-sharing-reveal {
-  margin: 2rem 0 1rem;
+  margin: 1.25rem 0 0.75rem;
   text-align: center;
 }
 
@@ -570,8 +585,8 @@
 }
 
 .anonymous-sharing-conversation {
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.875rem;
   border-radius: 1rem;
   background: rgba(255, 174, 139, 0.1);
   color: var(--sharing-coral) !important;
@@ -617,10 +632,46 @@
   }
 }
 
+@media (max-width: 40rem) {
+  .anonymous-sharing-entry {
+    padding-top: 2rem;
+  }
+
+  .anonymous-sharing-lobby,
+  .anonymous-sharing-writing,
+  .anonymous-sharing-story {
+    padding-top: 0.75rem;
+  }
+
+  .anonymous-sharing-lobby h1,
+  .anonymous-sharing-writing h1,
+  .anonymous-sharing-waiting h1,
+  .anonymous-sharing-story h1 {
+    margin-block: 0.5rem 0.75rem;
+  }
+
+  .anonymous-sharing-invite {
+    margin-block: 0.75rem;
+  }
+
+  .anonymous-sharing-step {
+    margin-bottom: 0.75rem;
+  }
+
+  .anonymous-sharing-writing textarea {
+    min-height: 6rem;
+    padding: 0.75rem;
+  }
+
+  .anonymous-sharing-waiting {
+    padding-top: 2rem;
+  }
+}
+
 .anonymous-sharing-guide,
 .anonymous-sharing-secret {
-  margin: 1.5rem 0;
-  padding: 1rem 1.125rem;
+  margin: 1rem 0;
+  padding: 0.875rem 1rem;
   border: 1px solid rgba(120, 226, 198, 0.24);
   border-radius: 1rem;
   background: rgba(10, 20, 43, 0.7);
@@ -631,14 +682,14 @@
 }
 .anonymous-sharing-guide strong,
 .anonymous-sharing-secret strong { color: var(--sharing-mint); }
-.anonymous-sharing-guide ol { margin: 0.75rem 0 0; padding-left: 1.25rem; }
-.anonymous-sharing-guide li + li { margin-top: 0.65rem; }
+.anonymous-sharing-guide ol { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+.anonymous-sharing-guide li + li { margin-top: 0.4rem; }
 .anonymous-sharing-secret p { margin: 0.5rem 0 0; }
 .anonymous-sharing-reveal {
   position: sticky;
   bottom: 0;
   z-index: 4;
-  padding: 0.875rem 0 max(0.875rem, env(safe-area-inset-bottom));
+  padding: 0.625rem 0 max(0.625rem, env(safe-area-inset-bottom));
   background: #242049;
   border-radius: 1rem;
 }
@@ -655,7 +706,7 @@
   font: inherit;
   font-weight: 700;
 }
-.anonymous-sharing-edit { margin-top: 1.5rem; }
+.anonymous-sharing-edit { margin-top: 1rem; }
 .anonymous-sharing-entry { padding-top: clamp(1.5rem, 6vh, 3rem); }
-.anonymous-sharing-entry-actions { margin-top: 1.5rem; }
+.anonymous-sharing-entry-actions { margin-top: 1.25rem; }
 .anonymous-sharing-screen button:disabled { opacity: 0.5; cursor: not-allowed; }

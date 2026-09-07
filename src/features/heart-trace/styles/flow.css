@@ -28,7 +28,7 @@
 }
 
 .intro-screen__header {
-  padding: 2rem 0 1rem;
+  padding: 1.25rem 0 0.75rem;
 }
 
 .intro-screen__header .eyebrow {
@@ -113,7 +113,7 @@
   display: grid;
   width: 15.5625rem;
   aspect-ratio: 1;
-  margin: 1.5rem auto 0;
+  margin: 1rem auto 0;
   place-items: center;
 }
 
@@ -186,7 +186,7 @@
 
 .intro-screen__message {
   position: relative;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   border: 1px solid rgba(199, 237, 255, 0.46);
   border-radius: 1.375rem;
   background: rgba(199, 229, 255, 0.14);
@@ -371,7 +371,7 @@
 .guide-screen__header {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .guide-screen__header h1 {
@@ -388,8 +388,8 @@
 
 .guide-list {
   display: grid;
-  gap: 1.5rem;
-  margin: 1.5rem 0 0;
+  gap: 1rem;
+  margin: 1rem 0 0;
   padding: 0;
   list-style: none;
   text-align: left;
@@ -399,7 +399,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1rem 1.125rem;
+  padding: 0.875rem 1rem;
   border: 1px solid rgba(199, 237, 255, 0.46);
   border-radius: 1.25rem;
   background: rgba(199, 229, 255, 0.05);
@@ -430,7 +430,7 @@
 
 .question-screen,
 .tie-screen {
-  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-top: calc(1rem + env(safe-area-inset-top));
 }
 
 .question-progress__label {
@@ -465,7 +465,7 @@
 
 .question-fieldset {
   min-width: 0;
-  margin: 1.25rem 0 0;
+  margin: 0.875rem 0 0;
   padding: 0;
   border: 0;
 }
@@ -516,8 +516,8 @@
 
 .answer-list {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
 }
 
 .answer-option {
@@ -617,7 +617,7 @@
   align-items: end;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 1.5rem;
+  padding-top: 1rem;
 }
 
 .question-actions__placeholder {

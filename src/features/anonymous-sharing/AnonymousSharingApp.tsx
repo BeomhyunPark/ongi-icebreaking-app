@@ -21,7 +21,6 @@ import {
 import './styles/anonymous-sharing.css';
 import {
   completeContentParticipation,
-  recordShareClick,
   startContentParticipation,
 } from '../../engagement/tracker';
 
@@ -101,11 +100,20 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
   const [error, setError] = useState('');
   const [hostWriting, setHostWriting] = useState(false);
   const [revealConfirming, setRevealConfirming] = useState(false);
+  const entryHeading = useRef<HTMLHeadingElement>(null);
   const storyTop = useRef<HTMLHeadingElement>(null);
   const draft = useRef<Record<string, string>>({});
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
-  const [saveStatus, setSaveStatus] = useState('');
   const [cancelConfirming, setCancelConfirming] = useState(false);
+
+  useEffect(() => {
+    if (entryMode === 'HOME') return;
+    const timer = window.setTimeout(() => {
+      entryHeading.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      entryHeading.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [entryMode]);
 
   const hydrateRoom = useCallback(async (targetRoomId: string) => {
     try {
@@ -195,9 +203,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
       || !['WRITING', 'LOCKED'].includes(roomState.status) || !Object.keys(draft.current).length) return;
     const snapshot = { ...draft.current };
     const timer = window.setTimeout(() => {
-      setSaveStatus('저장 중…');
-      void persistAnswers(roomId, snapshot).then(() => setSaveStatus('저장했어요'))
-        .catch(() => setSaveStatus('서버에 저장하지 못했어요. 연결을 확인하고 이전·다음 버튼으로 다시 저장해주세요.'));
+      void persistAnswers(roomId, snapshot).catch(() => undefined);
     }, 700);
     return () => window.clearTimeout(timer);
   }, [answers, busy, roomId, roomState?.status, roomState?.responseCompleted, persistAnswers]);
@@ -309,7 +315,6 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
     if (!roomId || !questions[questionIndex]) return;
     const question = questions[questionIndex];
     await persistAnswers(roomId, { ...draft.current, [question.id]: answers[question.id] ?? '' });
-    setSaveStatus('저장했어요');
   };
 
   const moveQuestion = (direction: -1 | 1) => run(async () => {
@@ -379,13 +384,12 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
         {entryMode === 'HOME' ? (
           <div className="anonymous-sharing-entry-actions">
             <PrimaryButton onClick={() => setEntryMode('CREATE')}>진행자로 모임 만들기</PrimaryButton>
-            <button type="button" onClick={() => setEntryMode('JOIN')}>참여 코드로 참여하기</button>
           </div>
         ) : null}
 
         {entryMode === 'CREATE' ? (
           <section className="anonymous-sharing-form" aria-labelledby="create-room-title">
-            <h2 id="create-room-title">새 모임 만들기</h2>
+            <h2 ref={entryHeading} id="create-room-title" tabIndex={-1}>새 모임 만들기</h2>
             <label htmlFor="sharing-room-title">모임 이름 <span>선택</span></label>
             <input
               id="sharing-room-title"
@@ -401,28 +405,17 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
 
         {entryMode === 'JOIN' ? (
           <section className="anonymous-sharing-form" aria-labelledby="join-room-title">
-            <h2 id="join-room-title">모임에 참여하기</h2>
-            <label htmlFor="sharing-room-code">참여 코드</label>
-            <input
-              id="sharing-room-code"
-              className="is-code"
-              value={roomCode}
-              maxLength={9}
-              autoCapitalize="characters"
-              autoComplete="off"
-              placeholder="7KFM-3QPX"
-              onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
-            />
+            <h2 ref={entryHeading} id="join-room-title" tabIndex={-1}>QR로 모임에 참여하기</h2>
             <label htmlFor="sharing-name">이름</label>
             <input
               id="sharing-name"
               value={name}
               maxLength={40}
               autoComplete="name"
-              placeholder="모임에서 사용하는 이름"
+              placeholder="모임에서 사용할 이름"
               onChange={(event) => setName(event.target.value)}
             />
-            <PrimaryButton disabled={busy || !roomCode.trim() || !name.trim()} onClick={joinRoom}>
+            <PrimaryButton disabled={busy || !name.trim()} onClick={joinRoom}>
               {busy ? '입장하는 중…' : '참여하기'}
             </PrimaryButton>
             <button type="button" onClick={() => setEntryMode('HOME')}>이전으로</button>
@@ -447,6 +440,9 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
     && roomState.responseCompleted;
   const currentQuestion = questions[questionIndex];
   const hasWrittenAnswer = questions.some(({ id }) => Boolean(answers[id]?.trim()));
+  const lobbyStep = roomState.status === 'LOCKED'
+    ? (roomState.completedParticipantCount === roomState.participantCount ? 3 : 2)
+    : roomState.status === 'WRITING' ? 1 : 0;
 
   return (
     <ScreenLayout className="anonymous-sharing-screen">
@@ -457,26 +453,20 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
         <section className="anonymous-sharing-lobby">
           <p className="eyebrow">진행자 화면</p>
           <h1>{roomState.title}</h1>
-          <p className="anonymous-sharing-guide">참여 링크 공유 → 입장 마감 → 모두 작성 완료 → 나눔 시작<br />나눔은 2명 이상부터 시작할 수 있어요. 입장을 마감해도 답변은 계속 작성할 수 있어요.</p>
+          <ol className="anonymous-sharing-flow" aria-label="나눔 진행 단계">
+            {['QR 공유', '입장 마감', '작성 완료', '나눔 시작'].map((label, index) => (
+              <li className={index <= lobbyStep ? 'is-active' : ''} key={label}>
+                <span>{index + 1}</span>{label}
+              </li>
+            ))}
+          </ol>
+          <p className="anonymous-sharing-guide">나눔은 3명 이상부터 시작할 수 있어요.</p>
           {roomState.status !== 'LOCKED' && visibleRoomCode ? (
             <div className="anonymous-sharing-invite">
-              <div className="anonymous-sharing-qr">
+              <div className="anonymous-sharing-qr" role="img" aria-label="모임 참여 QR 코드">
                 <QRCodeSVG value={shareUrl} size={164} level="M" marginSize={2} />
               </div>
-              <span>참여 코드</span>
-              <strong>{visibleRoomCode}</strong>
-              <button type="button" onClick={() => {
-                if (!navigator.clipboard) {
-
-                  return;
-                }
-                void navigator.clipboard.writeText(shareUrl)
-                  .then(() => {
-
-                    void recordShareClick('anonymous-sharing', 'copy_link');
-                  })
-                  .catch(() => undefined);
-              }}>참여 링크 복사</button>
+              <p>카메라로 QR을 스캔해 참여해주세요.</p>
             </div>
           ) : (
             <div className="anonymous-sharing-locked"><span aria-hidden="true">✓</span> 참여자 입장을 마감했어요.</div>
@@ -492,7 +482,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
                 value={name}
                 maxLength={40}
                 autoComplete="name"
-                placeholder="모임에서 사용하는 이름"
+                placeholder="모임에서 사용할 이름"
                 onChange={(event) => setName(event.target.value)}
               />
               <button type="button" disabled={busy || !name.trim()} onClick={joinAsHostParticipant}>나도 참여하기</button>
@@ -530,7 +520,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
             ) : (
               <>
                 <PrimaryButton
-                  disabled={busy || roomState.participantCount < 2 || roomState.completedParticipantCount !== roomState.participantCount}
+                  disabled={busy || roomState.participantCount < 3 || roomState.completedParticipantCount !== roomState.participantCount}
                   onClick={startSharing}
                 >
                   모두 준비됐어요 · 나눔 시작
@@ -579,17 +569,15 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
             disabled={busy}
             value={answers[currentQuestion.id] ?? ''}
             maxLength={2000}
-            rows={7}
+            rows={4}
             onChange={(event) => {
               const value = event.target.value;
               draft.current = { ...draft.current, [currentQuestion.id]: value };
               storeDraft(roomId, draft.current, roomState.expiresAt);
-              setSaveStatus('저장 대기 중…');
               setAnswers((current) => ({ ...current, [currentQuestion.id]: value }));
             }}
           />
           <p className="anonymous-sharing-help">{currentQuestion.helperText ?? '답하기 어려운 질문은 건너뛰어도 괜찮아요.'}</p>
-          <p className="anonymous-sharing-help" role="status">{saveStatus}</p>
           <div className="anonymous-sharing-writing-actions">
             <button type="button" disabled={busy || questionIndex === 0} onClick={() => void moveQuestion(-1)}>이전</button>
             {questionIndex < questions.length - 1 ? (

@@ -48,7 +48,7 @@
 }
 
 .group-picker-hero {
-  padding: 2rem 0 1rem;
+  padding: 1.25rem 0 0.75rem;
 }
 
 .group-picker-hero .eyebrow,
@@ -285,7 +285,7 @@
 .group-picker-section input[type="range"] {
   width: 100%;
   height: 0.375rem;
-  margin: 1.25rem 0 0.5rem;
+  margin: 0.875rem 0 0.375rem;
   accent-color: var(--picker-mint);
   cursor: pointer;
 }
@@ -332,7 +332,7 @@
 .group-picker-start {
   position: static;
   flex: none;
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .group-picker-drawing .screen-layout__content {
@@ -346,7 +346,7 @@
   display: grid;
   width: 8rem;
   height: 8rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   place-items: center;
 }
 
@@ -391,7 +391,7 @@
 .group-picker-drawing__dots {
   display: flex;
   gap: 0.375rem;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
 }
 
 .group-picker-drawing__dots i {
@@ -425,7 +425,7 @@
 }
 
 .group-picker-result__header {
-  padding: 2.25rem 0 1.25rem;
+  padding: 1.5rem 0 0.875rem;
 }
 
 .group-picker-result__header h1 {
@@ -782,7 +782,7 @@
 .group-picker-result__actions {
   display: grid;
   gap: 0.625rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .group-picker-result__actions .primary-button {

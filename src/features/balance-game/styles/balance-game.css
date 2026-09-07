@@ -100,7 +100,7 @@
 }
 
 .balance-header {
-  padding: 2rem 0 1rem;
+  padding: 1.25rem 0 0.75rem;
 }
 
 .balance-header h1,
@@ -307,7 +307,7 @@
 }
 
 .balance-credit {
-  margin: 2rem 0 0;
+  margin: 1.25rem 0 0;
   color: rgba(216, 199, 210, 0.66);
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
@@ -319,7 +319,7 @@
 }
 
 .balance-picker__header {
-  padding: 1.75rem 0 1.25rem;
+  padding: 1.125rem 0 0.875rem;
 }
 
 .balance-picker__header h1 {
@@ -499,7 +499,7 @@
 .balance-play__progress {
   display: grid;
   gap: 0.5rem;
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .balance-play .screen-layout__content {
@@ -523,7 +523,7 @@
 
 .balance-play__question {
   min-height: 10rem;
-  padding-top: 2.5rem;
+  padding-top: 1.5rem;
   text-align: center;
 }
 
@@ -565,7 +565,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 2.25rem minmax(0, 1fr);
   align-items: stretch;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .balance-choice-list > button {
@@ -628,7 +628,7 @@
 
 .balance-play--deep .balance-play__question {
   min-height: 0;
-  padding-top: 1.5rem;
+  padding-top: 1rem;
 }
 
 .balance-play--deep .balance-play__question h1 {
@@ -638,7 +638,7 @@
 .balance-play--deep .balance-choice-list {
   grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
 }
 
 .balance-play--deep .balance-choice-list > button {
@@ -685,7 +685,7 @@
   width: 6rem;
   height: 6rem;
   place-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   border-radius: 50%;
   background: linear-gradient(145deg, var(--ongi-rose-400), var(--ongi-lavender-400));
   box-shadow: 0 0 3rem rgba(244, 143, 170, 0.32);
@@ -707,7 +707,7 @@
   display: grid;
   width: 100%;
   gap: 0.75rem;
-  margin-top: 2.5rem;
+  margin-top: 1.5rem;
 }
 
 .balance-complete__actions > button:last-child {

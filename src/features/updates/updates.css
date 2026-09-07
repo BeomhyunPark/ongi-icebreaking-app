@@ -1,7 +1,7 @@
 .updates-screen {
-  padding: calc(1.5rem + env(safe-area-inset-top))
+  padding: calc(1rem + env(safe-area-inset-top))
     calc(1.5rem + env(safe-area-inset-right))
-    calc(3rem + env(safe-area-inset-bottom))
+    calc(2rem + env(safe-area-inset-bottom))
     calc(1.5rem + env(safe-area-inset-left));
   background:
     radial-gradient(circle at 92% 6%, rgba(244, 143, 170, 0.14), transparent 22rem),
@@ -15,7 +15,7 @@
 }
 
 .updates-header {
-  padding-bottom: 1.75rem;
+  padding-bottom: 1.125rem;
   border-bottom: 1px solid rgba(255, 201, 143, 0.18);
 }
 
@@ -44,7 +44,7 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin-top: 2rem;
+  margin-top: 1.25rem;
   color: rgba(255, 201, 143, 0.7);
   font-size: 0.625rem;
   font-weight: 700;
@@ -52,7 +52,7 @@
 }
 
 .updates-header h1 {
-  margin: 1.75rem 0 0;
+  margin: 1.125rem 0 0;
   color: var(--ongi-cream-50);
   font-size: 2rem;
   letter-spacing: -0.045rem;
@@ -69,8 +69,8 @@
 .updates-note {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding: 1rem;
+  margin-top: 1rem;
+  padding: 0.875rem;
   border: 1px solid rgba(180, 160, 255, 0.2);
   border-radius: 1rem;
   background: rgba(57, 34, 63, 0.45);
@@ -102,12 +102,12 @@
 
 .release-entry {
   position: relative;
-  padding: 2rem 0 0 1.75rem;
+  padding: 1.25rem 0 0 1.75rem;
 }
 
 .release-entry::before {
   position: absolute;
-  top: 2.35rem;
+  top: 1.6rem;
   left: 0;
   width: 0.625rem;
   height: 0.625rem;
@@ -119,8 +119,8 @@
 
 .release-entry::after {
   position: absolute;
-  top: 3.1rem;
-  bottom: -2rem;
+  top: 2.35rem;
+  bottom: -1.25rem;
   left: 0.3125rem;
   width: 1px;
   background: rgba(255, 201, 143, 0.2);
@@ -138,7 +138,7 @@
 }
 
 .release-entry > article {
-  padding: 1.25rem;
+  padding: 1rem;
   border: 1px solid rgba(255, 201, 143, 0.13);
   border-radius: var(--ongi-radius-card);
   background: rgba(36, 24, 39, 0.72);
@@ -251,7 +251,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 2rem;
+  margin-top: 1.25rem;
   text-align: center;
 }
 

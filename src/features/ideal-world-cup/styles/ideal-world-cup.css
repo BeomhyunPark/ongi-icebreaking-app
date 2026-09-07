@@ -42,7 +42,7 @@
 }
 
 .world-cup-hero {
-  padding: 2rem 0 1rem;
+  padding: 1.25rem 0 0.75rem;
 }
 
 .world-cup-hero h1,
@@ -261,7 +261,7 @@
 }
 
 .world-cup-start {
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .world-cup-match .screen-layout__content {
@@ -304,7 +304,7 @@
 }
 
 .world-cup-match__question {
-  padding: 1.5rem 0 1.125rem;
+  padding: 1rem 0 0.75rem;
   text-align: center;
 }
 
@@ -320,7 +320,7 @@
 .world-cup-duel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.75rem;
+  gap: 1.25rem;
   align-items: stretch;
 }
 
@@ -444,7 +444,7 @@
 
 .world-cup-match__footer {
   margin-top: auto;
-  padding-top: 1.25rem;
+  padding-top: 0.875rem;
   text-align: center;
 }
 
@@ -489,13 +489,13 @@
 .world-cup-round-complete__mark {
   width: 4.5rem;
   height: 4.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   font-size: 1.5rem;
 }
 
 .world-cup-round-complete .eyebrow,
 .world-cup-champion .eyebrow {
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   color: var(--world-cup-gold);
 }
 
@@ -516,7 +516,7 @@
   width: min(17rem, 100%);
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .world-cup-advance-preview .world-cup-candidate-visual {
@@ -533,7 +533,7 @@
   display: grid;
   width: 100%;
   gap: 0.625rem;
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .world-cup-share-message {
@@ -556,7 +556,7 @@
 
 .world-cup-champion__image {
   width: min(17rem, 86%);
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   padding: 0.375rem;
   border: 1px solid rgba(255, 211, 110, 0.54);
   border-radius: 1.75rem;
@@ -574,7 +574,7 @@
 
 .world-cup-champion__path {
   width: 100%;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
 }
 
 .world-cup-champion__path h2 {
@@ -607,7 +607,7 @@
   flex-direction: column;
   gap: 0.375rem;
   justify-content: center;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   padding-block: 1rem;
   padding-inline: 1.125rem;
   border: 1px solid rgba(255, 211, 110, 0.24);
@@ -648,7 +648,7 @@
   }
 
   .world-cup-duel {
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   .world-cup-duel__side > button {

@@ -29,7 +29,7 @@ describe('익명 자기소개 나눔', () => {
     vi.unstubAllGlobals();
   });
 
-  it('Room Code로 참여하고 질문을 한 단계씩 저장한 뒤 대기 화면으로 이동한다', async () => {
+  it('QR 링크로 참여하고 질문을 한 단계씩 저장한 뒤 대기 화면으로 이동한다', async () => {
     let completed = false;
     const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
@@ -88,6 +88,7 @@ describe('익명 자기소개 나눔', () => {
     fireEvent.click(screen.getByRole('button', { name: '다음' }));
 
     expect(await screen.findByRole('heading', { name: '쉬는 날 가장 하고 싶은 것은 무엇인가요?' })).toBeTruthy();
+    expect(screen.queryByText(/저장(?: 대기 중| 중|했어요)/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '작성 완료' }));
 
     expect(await screen.findByRole('heading', { name: '이제 서로를 기다려요' })).toBeTruthy();
@@ -97,6 +98,16 @@ describe('익명 자기소개 나눔', () => {
       expect(new Headers(joinInit.headers).get('X-OnGi-Client')).toBe('web');
       expect(joinInit.credentials).toBe('include');
     });
+  });
+
+  it('시작 화면에서는 참여 코드를 입력할 수 없다', () => {
+    window.history.replaceState({}, '', '/?activity=anonymous-sharing');
+
+    render(<AnonymousSharingApp onBackHome={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: '진행자로 모임 만들기' })).toBeTruthy();
+    expect(screen.queryByText('참여 코드')).toBeNull();
+    expect(screen.queryByRole('button', { name: '참여 코드로 참여하기' })).toBeNull();
   });
 
   it('모든 답변이 비어 있거나 공백뿐이면 작성을 완료할 수 없다', async () => {
@@ -198,6 +209,8 @@ describe('익명 자기소개 나눔', () => {
 
     render(<AnonymousSharingApp onBackHome={vi.fn()} />);
     expect(await screen.findByText('진행자도 함께 참여할까요?')).toBeTruthy();
+    expect(screen.getByRole('img', { name: '모임 참여 QR 코드' })).toBeTruthy();
+    expect(screen.queryByText('7KFM-3QPX')).toBeNull();
     fireEvent.change(screen.getByLabelText('내 이름'), { target: { value: '진행자' } });
     fireEvent.click(screen.getByRole('button', { name: '나도 참여하기' }));
 
