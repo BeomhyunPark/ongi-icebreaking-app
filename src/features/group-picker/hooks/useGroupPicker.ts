@@ -1,5 +1,8 @@
 import { useEffect, useReducer } from 'react';
-import { completeContentParticipation, startContentParticipation } from '../../../engagement/tracker';
+import {
+  completeContentParticipation,
+  startContentParticipation,
+} from '../../../engagement/tracker';
 import { prepareDraw as prepareResult } from '../domain/prepareDraw';
 import { getPickerModeDefinition } from '../domain/modeCatalog';
 import type { PickerMode } from '../domain/types';
@@ -8,10 +11,20 @@ import { loadPickerSession, savePickerSession } from '../services/sessionStorage
 import { createPickerState, pickerReducer } from '../state/pickerReducer';
 
 export function useGroupPicker(initialMode: PickerMode, onModeChange?: (mode: PickerMode) => void) {
-  const [state, dispatch] = useReducer(pickerReducer, initialMode, mode => {
+  const [state, dispatch] = useReducer(pickerReducer, initialMode, (mode) => {
     const saved = loadPickerSession(mode);
-    const setup = saved ?? { names: loadGroupNames(), nameDraft: '', outcomes: [], outcomeDraft: '', winnerCount: 1, groupCount: 2 };
-    return createPickerState(mode, setup, saved?.result, saved?.revealed);
+    if (saved) {
+      const { result, revealed, ...setup } = saved;
+      return createPickerState(mode, setup, result, revealed);
+    }
+    return createPickerState(mode, {
+      names: loadGroupNames(),
+      nameDraft: '',
+      outcomes: [],
+      outcomeDraft: '',
+      winnerCount: 1,
+      groupCount: 2,
+    });
   });
   const { mode, setup, phase, result, activeLadderStart, revealedLadderStarts } = state;
 
@@ -20,7 +33,9 @@ export function useGroupPicker(initialMode: PickerMode, onModeChange?: (mode: Pi
     savePickerSession(mode, { ...setup, result, revealed: [...revealedLadderStarts] });
   }, [mode, setup, result, revealedLadderStarts]);
 
-  useEffect(() => { onModeChange?.(mode); }, [mode, onModeChange]);
+  useEffect(() => {
+    onModeChange?.(mode);
+  }, [mode, onModeChange]);
   useEffect(() => {
     if (phase !== 'drawing') return;
     const timer = window.setTimeout(() => dispatch({ type: 'DRAW_FINISHED' }), 1600);
@@ -36,15 +51,22 @@ export function useGroupPicker(initialMode: PickerMode, onModeChange?: (mode: Pi
   }, [activeLadderStart, state.revealAllQueue]);
 
   return {
-    state, ...setup, mode, error: state.error,
-    activeLadderStart, revealedLadderStarts, revealAllQueue: state.revealAllQueue,
+    state,
+    ...setup,
+    mode,
+    error: state.error,
+    activeLadderStart,
+    revealedLadderStarts,
+    revealAllQueue: state.revealAllQueue,
     selectedMode: getPickerModeDefinition(mode),
     selectMode: (nextMode: PickerMode) => dispatch({ type: 'SELECT_MODE', mode: nextMode }),
     setNames: (names: string[]) => dispatch({ type: 'EDIT_NAMES', names }),
     setNameDraft: (value: string) => dispatch({ type: 'EDIT_DRAFT', field: 'nameDraft', value }),
-    setOutcomeDraft: (value: string) => dispatch({ type: 'EDIT_DRAFT', field: 'outcomeDraft', value }),
+    setOutcomeDraft: (value: string) =>
+      dispatch({ type: 'EDIT_DRAFT', field: 'outcomeDraft', value }),
     setOutcomes: (outcomes: string[]) => dispatch({ type: 'EDIT_OUTCOMES', outcomes }),
-    setWinnerCount: (value: number) => dispatch({ type: 'EDIT_COUNT', field: 'winnerCount', value }),
+    setWinnerCount: (value: number) =>
+      dispatch({ type: 'EDIT_COUNT', field: 'winnerCount', value }),
     setGroupCount: (value: number) => dispatch({ type: 'EDIT_COUNT', field: 'groupCount', value }),
     clearItems: () => dispatch({ type: 'CLEAR_ITEMS' }),
     resetToSetup: () => dispatch({ type: 'RESET_TO_SETUP' }),

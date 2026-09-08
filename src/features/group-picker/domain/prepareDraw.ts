@@ -1,4 +1,11 @@
-import { createLadder, createPrayerSupportAssignments, shuffle, splitIntoGroups, splitIntoPairs, type RandomSource } from './draw';
+import {
+  createLadder,
+  createPrayerSupportAssignments,
+  shuffle,
+  splitIntoGroups,
+  splitIntoPairs,
+  type RandomSource,
+} from './draw';
 import { MAX_PARTICIPANTS, mergeItems, parseItems } from './items';
 import type { DrawResult, PickerMode, PickerSetup } from './types';
 
@@ -6,9 +13,17 @@ export type PreparedDraw =
   | { ok: false; setup: PickerSetup; error: string }
   | { ok: true; setup: PickerSetup; result: DrawResult };
 
-export function prepareDraw(mode: PickerMode, setup: PickerSetup, random?: RandomSource): PreparedDraw {
+export function prepareDraw(
+  mode: PickerMode,
+  setup: PickerSetup,
+  random?: RandomSource,
+): PreparedDraw {
   if (setup.names.length + parseItems(setup.nameDraft).length > MAX_PARTICIPANTS) {
-    return { ok: false, setup, error: '최대 32명까지 참여할 수 있어요. 입력한 명단을 확인해 주세요.' };
+    return {
+      ok: false,
+      setup,
+      error: '최대 32명까지 참여할 수 있어요. 입력한 명단을 확인해 주세요.',
+    };
   }
   const names = mergeItems(setup.names, setup.nameDraft, MAX_PARTICIPANTS);
   const outcomes = mergeItems(setup.outcomes, setup.outcomeDraft, MAX_PARTICIPANTS, true);
@@ -24,17 +39,29 @@ export function prepareDraw(mode: PickerMode, setup: PickerSetup, random?: Rando
   let result: DrawResult;
   switch (mode) {
     case 'ladder':
-      result = { mode, orderedNames, ladder: createLadder(names.length, random),
-        outcomes: outcomes.length ? outcomes : names.map((_, index) => `${index + 1}번`) };
+      result = {
+        mode,
+        orderedNames,
+        ladder: createLadder(names.length, random),
+        outcomes: outcomes.length ? outcomes : names.map((_, index) => `${index + 1}번`),
+      };
       break;
     case 'groups':
-      result = { mode, orderedNames, groups: splitIntoGroups(names, Math.min(setup.groupCount, names.length), random) };
+      result = {
+        mode,
+        orderedNames,
+        groups: splitIntoGroups(names, Math.min(setup.groupCount, names.length), random),
+      };
       break;
     case 'pairs':
       result = { mode, orderedNames, groups: splitIntoPairs(names, random) };
       break;
     case 'supporter':
-      result = { mode, orderedNames, supportAssignments: createPrayerSupportAssignments(names, random) };
+      result = {
+        mode,
+        orderedNames,
+        supportAssignments: createPrayerSupportAssignments(names, random),
+      };
       break;
     case 'lottery':
       result = { mode, orderedNames, winnerCount: Math.min(setup.winnerCount, names.length - 1) };

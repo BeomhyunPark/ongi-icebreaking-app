@@ -1,38 +1,56 @@
 import { resolveLadder } from '../domain/draw';
 import { getSpecialOutcomeValues } from '../domain/outcomes';
-import type { DrawResult } from '../domain/types';
+import type { DrawResult, PickerMode } from '../domain/types';
 import type { GroupPickerResultEntry } from './resultImage';
 
-export function presentPickerResult(result: DrawResult) {
-  const destinations = result.mode === 'ladder' ? resolveLadder(result.ladder) : [];
-  const specialOutcomeValues = getSpecialOutcomeValues(result.mode === 'ladder' ? result.outcomes : []);
-      const entries: GroupPickerResultEntry[] = result.mode === 'ladder'
-        ? result.orderedNames.map((name, index) => {
-            const value = result.outcomes[destinations[index]];
-            return { name, value, special: specialOutcomeValues.has(value) };
-          })
-        : result.mode === 'groups' || result.mode === 'pairs'
-          ? result.groups.flatMap((group, groupIndex) => group.map((name) => ({ name, value: `${groupIndex + 1}${result.mode === 'groups' ? '조' : '팀'}` })))
-          : result.mode === 'lottery'
-          ? result.orderedNames.slice(0, result.winnerCount).map((name) => ({ name, value: '당첨', special: true }))
-          : result.mode === 'supporter'
-            ? result.supportAssignments.map(({ supporter, recipient }) => ({ name: supporter, value: recipient }))
-          : result.mode === 'prayer'
-            ? [{ name: result.orderedNames[0], value: '기도', special: true }]
-            : result.orderedNames.map((name, index) => ({ name, value: `${index + 1}번째`, special: index === 0 }));
-      const resultTitle = result.mode === 'ladder'
-        ? '사다리 결과'
-        : result.mode === 'groups'
-          ? '오늘의 나눔 조'
-        : result.mode === 'pairs'
-          ? '오늘의 원투원 짝'
-        : result.mode === 'sharing'
-          ? '오늘의 나눔 순서'
-          : result.mode === 'lottery'
-            ? '오늘의 당첨 결과'
-            : result.mode === 'supporter'
-              ? '이번 주 내 기도 후원자'
-              : '오늘 기도할 사람';
+const RESULT_TITLES: Record<PickerMode, string> = {
+  ladder: '사다리 결과',
+  groups: '오늘의 나눔 조',
+  pairs: '오늘의 원투원 짝',
+  sharing: '오늘의 나눔 순서',
+  lottery: '오늘의 당첨 결과',
+  supporter: '이번 주 내 기도 후원자',
+  prayer: '오늘 기도할 사람',
+};
 
-  return { entries, resultTitle };
+function resultEntries(result: DrawResult): GroupPickerResultEntry[] {
+  switch (result.mode) {
+    case 'ladder': {
+      const destinations = resolveLadder(result.ladder);
+      const special = getSpecialOutcomeValues(result.outcomes);
+      return result.orderedNames.map((name, index) => {
+        const value = result.outcomes[destinations[index]];
+        return { name, value, special: special.has(value) };
+      });
+    }
+    case 'groups':
+    case 'pairs':
+      return result.groups.flatMap((group, index) =>
+        group.map((name) => ({
+          name,
+          value: `${index + 1}${result.mode === 'groups' ? '조' : '팀'}`,
+        })),
+      );
+    case 'lottery':
+      return result.orderedNames
+        .slice(0, result.winnerCount)
+        .map((name) => ({ name, value: '당첨', special: true }));
+    case 'supporter':
+      return result.supportAssignments.map(({ supporter, recipient }) => ({
+        name: supporter,
+        value: recipient,
+      }));
+    case 'prayer':
+      return [{ name: result.orderedNames[0], value: '기도', special: true }];
+    case 'sharing':
+      return result.orderedNames.map((name, index) => ({
+        name,
+        value: `${index + 1}번째`,
+        special: index === 0,
+      }));
+  }
+}
+
+export function presentPickerResult(result: DrawResult) {
+  return { entries: resultEntries(result), resultTitle: RESULT_TITLES[result.mode] };
 }

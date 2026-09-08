@@ -50,7 +50,10 @@ export function LadderBoard({
   return (
     <div className="group-picker-ladder-scroll">
       <div className="group-picker-ladder-board" style={{ minWidth: `${width}px` }}>
-        <div className="group-picker-ladder-labels" style={{ gridTemplateColumns: `repeat(${names.length}, 1fr)` }}>
+        <div
+          className="group-picker-ladder-labels"
+          style={{ gridTemplateColumns: `repeat(${names.length}, 1fr)` }}
+        >
           {names.map((name, index) => (
             <button
               className={revealedStarts.has(index) ? 'is-revealed' : undefined}
@@ -58,18 +61,38 @@ export function LadderBoard({
               disabled={activeStart !== null}
               onClick={() => onSelectStart(index)}
               key={name}
-            >{name}</button>
+            >
+              {name}
+            </button>
           ))}
         </div>
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="완성된 사다리">
           {names.map((name, index) => {
             const x = side + index * gap;
-            return <line className="ladder-line" x1={x} y1={top - 28} x2={x} y2={bottom + 28} key={name} />;
+            return (
+              <line
+                className="ladder-line"
+                x1={x}
+                y1={top - 28}
+                x2={x}
+                y2={bottom + 28}
+                key={name}
+              />
+            );
           })}
           {ladder.rungs.map((rung) => {
             const x = side + rung.leftColumn * gap;
             const y = top + rung.row * rowGap;
-            return <line className="ladder-line" x1={x} y1={y} x2={x + gap} y2={y} key={`${rung.row}-${rung.leftColumn}`} />;
+            return (
+              <line
+                className="ladder-line"
+                x1={x}
+                y1={y}
+                x2={x + gap}
+                y2={y}
+                key={`${rung.row}-${rung.leftColumn}`}
+              />
+            );
           })}
           {activeStart !== null ? (
             <polyline
@@ -79,9 +102,15 @@ export function LadderBoard({
             />
           ) : null}
         </svg>
-        <div className="group-picker-ladder-labels is-outcomes" style={{ gridTemplateColumns: `repeat(${outcomes.length}, 1fr)` }}>
+        <div
+          className="group-picker-ladder-labels is-outcomes"
+          style={{ gridTemplateColumns: `repeat(${outcomes.length}, 1fr)` }}
+        >
           {outcomes.map((outcome, index) => (
-            <span className={`${revealedDestinations.has(index) ? 'is-revealed' : ''}${specialOutcomes.has(outcome) ? ' is-special' : ''}`.trim()} key={`${outcome}-${index}`}>
+            <span
+              className={`${revealedDestinations.has(index) ? 'is-revealed' : ''}${specialOutcomes.has(outcome) ? ' is-special' : ''}`.trim()}
+              key={`${outcome}-${index}`}
+            >
               {revealedDestinations.has(index) ? outcome : '?'}
             </span>
           ))}

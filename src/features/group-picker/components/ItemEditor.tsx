@@ -28,11 +28,18 @@ export function ItemEditor({
   const addItems = (value: string) => {
     const added = parseItems(value);
     const merged = mergeItems(items, value, max, allowDuplicates);
-    const duplicated = !allowDuplicates && new Set([...items, ...added]).size < items.length + added.length;
-    setNotice([
-      duplicated ? '같은 이름은 번호로 구분했어요.' : '',
-      items.length + added.length > max ? `최대 ${max}개예요. 초과한 항목은 입력란에 남겼어요.` : '',
-    ].filter(Boolean).join(' '));
+    const duplicated =
+      !allowDuplicates && new Set([...items, ...added]).size < items.length + added.length;
+    setNotice(
+      [
+        duplicated ? '같은 이름은 번호로 구분했어요.' : '',
+        items.length + added.length > max
+          ? `최대 ${max}개예요. 초과한 항목은 입력란에 남겼어요.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
     onItemsChange(merged);
     onDraftChange(added.slice(max - items.length).join(', '));
   };
@@ -68,9 +75,15 @@ export function ItemEditor({
             }
           }}
         />
-        <button type="button" onClick={addDraft} disabled={!draft.trim() || items.length >= max}>추가</button>
+        <button type="button" onClick={addDraft} disabled={!draft.trim() || items.length >= max}>
+          추가
+        </button>
       </div>
-      {notice ? <p className="group-picker-input-notice" role="status">{notice}</p> : null}
+      {notice ? (
+        <p className="group-picker-input-notice" role="status">
+          {notice}
+        </p>
+      ) : null}
       {items.length > 0 ? (
         <div className="group-picker-chips" aria-label={`${label} 목록`}>
           {items.map((item, itemIndex) => (
@@ -80,7 +93,9 @@ export function ItemEditor({
                 type="button"
                 aria-label={`${item} ${itemIndex + 1}번째 삭제`}
                 onClick={() => onItemsChange(items.filter((_, index) => index !== itemIndex))}
-              >×</button>
+              >
+                ×
+              </button>
             </span>
           ))}
         </div>

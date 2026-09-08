@@ -1,7 +1,10 @@
 export const MAX_PARTICIPANTS = 32;
 
 export function parseItems(value: string): string[] {
-  return value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 export function mergeItems(
