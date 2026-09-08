@@ -941,3 +941,30 @@
   }
 
 }
+.home-intents {
+  display: grid;
+  grid-template-columns: auto repeat(3, 1fr);
+  gap: 0.375rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.home-screen--filtered .home-section__meta { display: none; }
+
+.home-intents button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid #68576e;
+  border-radius: 999px;
+  background: transparent;
+  color: #e2dce9;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.home-intents button[aria-pressed='true'] {
+  background: #f7c48e;
+  border-color: #f7c48e;
+  color: #251c29;
+  font-weight: 700;
+}

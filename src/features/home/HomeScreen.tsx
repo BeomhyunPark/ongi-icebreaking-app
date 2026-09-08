@@ -52,12 +52,15 @@ export function HomeScreen({
   onSelectActivity,
 }: HomeScreenProps) {
   const [visitorCount, setVisitorCount] = useState<number | null>(getCachedVisitorCount);
+  const [intent, setIntent] = useState<'all' | 'test' | 'play' | 'tools'>('all');
   const featuredActivity = ACTIVITIES.find(({ id }) => id === featuredActivityId) ?? null;
   const communityTools = ACTIVITIES.filter((activity) => (
     activity.available && activity.group === 'community-tool'
   ));
   const otherPlayActivities = ACTIVITIES.filter((activity) => (
     activity.group === 'play' && activity.id !== featuredActivity?.id
+    && (intent !== 'test' || activity.id === 'heart-trace')
+    && (intent !== 'play' || activity.id !== 'heart-trace')
   ));
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export function HomeScreen({
   }
 
   return (
-    <ScreenLayout className="home-screen">
+    <ScreenLayout className={`home-screen${intent === 'all' ? '' : ' home-screen--filtered'}`}>
       <header className="home-hero">
         <div className="home-brand" aria-label="온기">
           <BrandMark />
@@ -105,6 +108,13 @@ export function HomeScreen({
         </div>
       </header>
 
+      <nav className="home-intents" aria-label="콘텐츠 고르기">
+        {([['all', '전체'], ['test', '혼자 테스트'], ['play', '함께 놀기'], ['tools', '모임 도구']] as const).map(([id, label]) => (
+          <button type="button" key={id} aria-pressed={intent === id} onClick={() => setIntent(id)}>{label}</button>
+        ))}
+      </nav>
+
+      {intent === 'all' || intent === 'tools' ? (
       <section className="home-section home-section--community-tools" aria-labelledby="community-tools-title">
         <div className="home-section__meta">
           <p>모임마다 다시 찾게 되는</p>
@@ -165,6 +175,9 @@ export function HomeScreen({
         </div>
       </section>
 
+      ) : null}
+
+      {intent === 'all' || intent === 'play' ? (
       <section className="home-section" aria-labelledby="featured-title">
         <div className="home-section__meta">
           <p>지금 바로 해봐요</p>
@@ -194,12 +207,15 @@ export function HomeScreen({
         </button>
       </section>
 
+      ) : null}
+
+      {intent !== 'tools' ? (
       <section className="home-section home-section--upcoming" aria-labelledby="more-title">
         <div className="home-section__meta">
           <p>취향대로 골라봐요</p>
           <span aria-hidden="true">03</span>
         </div>
-        <h2 id="more-title">다른 놀거리</h2>
+        <h2 id="more-title">{intent === 'test' ? '성격 테스트' : '다른 놀거리'}</h2>
 
         <div className="activity-grid">
           {otherPlayActivities.map((activity) => {
@@ -245,6 +261,9 @@ export function HomeScreen({
         </div>
       </section>
 
+      ) : null}
+
+      {intent === 'all' || intent === 'test' ? (
       <section className="home-section home-section--preview" aria-labelledby="preview-title">
         <div className="home-section__meta">
           <p>먼저 경험해 주세요</p>
@@ -272,6 +291,8 @@ export function HomeScreen({
           </span>
         </button>
       </section>
+
+      ) : null}
 
       <InstallAppPrompt />
 
