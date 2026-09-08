@@ -3,10 +3,7 @@ import { ShareNotice, useShareNotice } from './ShareNotice';
 
 import type { ActivityTarget } from '../app/activityNavigation';
 import { getShareTarget } from '../app/shareTargets';
-import {
-  buildActivityShareUrl,
-  shareAppLink,
-} from '../platform/shareLink';
+import { buildActivityShareUrl, shareAppLink } from '../platform/shareLink';
 import { getEngagementContentCode } from '../engagement/contentCodes';
 import { recordShareClick } from '../engagement/tracker';
 
@@ -40,8 +37,11 @@ export const ActivityShareButton = memo(function ActivityShareButton({
       if (contentCode && (result === 'shared' || result === 'copied')) {
         void recordShareClick(contentCode, result === 'shared' ? 'native' : 'copy_link');
       }
-    } catch { reportShare('failed'); }
-    finally { setBusy(false); }
+    } catch {
+      reportShare('failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const accent = shareTarget?.accent ?? '#ffc98f';
@@ -50,10 +50,12 @@ export const ActivityShareButton = memo(function ActivityShareButton({
   return (
     <div
       className="activity-link-share"
-      style={{
-        '--activity-share-accent': accent,
-        '--activity-share-secondary': secondary,
-      } as CSSProperties}
+      style={
+        {
+          '--activity-share-accent': accent,
+          '--activity-share-secondary': secondary,
+        } as CSSProperties
+      }
     >
       {shareTarget ? (
         <button

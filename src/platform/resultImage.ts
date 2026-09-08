@@ -4,17 +4,15 @@ type DeviceInfo = {
   maxTouchPoints: number;
 };
 
-export type ResultImageAction =
-  | 'shared'
-  | 'downloaded'
-  | 'cancelled'
-  | 'ios-help';
+export type ResultImageAction = 'shared' | 'downloaded' | 'cancelled' | 'ios-help';
 
 const resultImageFiles = new Map<string, Promise<File>>();
 
 export function isIosLikeDevice(device: DeviceInfo): boolean {
-  return /iPad|iPhone|iPod/i.test(device.userAgent)
-    || (device.platform === 'MacIntel' && device.maxTouchPoints > 1);
+  return (
+    /iPad|iPhone|iPod/i.test(device.userAgent) ||
+    (device.platform === 'MacIntel' && device.maxTouchPoints > 1)
+  );
 }
 
 export function isAndroidDevice(device: Pick<DeviceInfo, 'userAgent'>): boolean {
@@ -30,16 +28,12 @@ function getCurrentDevice(): DeviceInfo {
 }
 
 function isShareCancellation(error: unknown): boolean {
-  return typeof error === 'object'
-    && error !== null
-    && 'name' in error
-    && error.name === 'AbortError';
+  return (
+    typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
+  );
 }
 
-export function loadResultImageFile(
-  imageSrc: string,
-  filename: string,
-): Promise<File> {
+export function loadResultImageFile(imageSrc: string, filename: string): Promise<File> {
   const cachedFile = resultImageFiles.get(imageSrc);
 
   if (cachedFile) {
@@ -54,9 +48,12 @@ export function loadResultImageFile(
 
       return response.blob();
     })
-    .then((blob) => new File([blob], filename, {
-      type: blob.type || 'image/png',
-    }))
+    .then(
+      (blob) =>
+        new File([blob], filename, {
+          type: blob.type || 'image/png',
+        }),
+    )
     .catch((error: unknown) => {
       resultImageFiles.delete(imageSrc);
       throw error;
@@ -66,18 +63,12 @@ export function loadResultImageFile(
   return filePromise;
 }
 
-export function preloadResultImage(
-  imageSrc: string,
-  filename: string,
-): Promise<File> {
+export function preloadResultImage(imageSrc: string, filename: string): Promise<File> {
   return loadResultImageFile(imageSrc, filename);
 }
 
 function canShareResultFile(file: File): boolean {
-  if (
-    typeof navigator.share !== 'function'
-    || typeof navigator.canShare !== 'function'
-  ) {
+  if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
     return false;
   }
 
@@ -148,7 +139,10 @@ export async function saveResultImageFile(
   return 'downloaded';
 }
 
-export async function shareResultImageFile(file: File, imageSrc: string): Promise<ResultImageAction> {
+export async function shareResultImageFile(
+  file: File,
+  imageSrc: string,
+): Promise<ResultImageAction> {
   if (canShareResultFile(file)) {
     try {
       await navigator.share({ files: [file] });

@@ -9,9 +9,13 @@ export function ShareApp() {
     if (busy) return;
     setBusy(true);
     clearNotice();
-    try { reportShare(await shareAppLink()); }
-    catch { reportShare('failed'); }
-    finally { setBusy(false); }
+    try {
+      reportShare(await shareAppLink());
+    } catch {
+      reportShare('failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

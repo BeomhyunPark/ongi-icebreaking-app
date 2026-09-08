@@ -8,8 +8,9 @@ export type ShareAppLinkOptions = {
 };
 
 function getShareUrl(): string {
-  return document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href
-    ?? window.location.href;
+  return (
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? window.location.href
+  );
 }
 
 export function buildActivityShareUrl(slug: string): string {
@@ -42,10 +43,9 @@ async function copyText(text: string): Promise<void> {
 }
 
 function isShareCancellation(error: unknown): boolean {
-  return typeof error === 'object'
-    && error !== null
-    && 'name' in error
-    && error.name === 'AbortError';
+  return (
+    typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
+  );
 }
 
 async function copyShareUrl(): Promise<ShareAppLinkResult> {
@@ -57,9 +57,7 @@ async function copyShareUrl(): Promise<ShareAppLinkResult> {
   }
 }
 
-export async function shareAppLink(
-  options: ShareAppLinkOptions = {},
-): Promise<ShareAppLinkResult> {
+export async function shareAppLink(options: ShareAppLinkOptions = {}): Promise<ShareAppLinkResult> {
   const url = options.url ?? getShareUrl();
 
   if (typeof navigator.share !== 'function') {

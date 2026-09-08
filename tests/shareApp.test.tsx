@@ -31,10 +31,14 @@ describe('온기 링크 공유', () => {
     render(<ShareApp />);
     fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
 
-    await waitFor(() => expect(share).toHaveBeenCalledWith(expect.objectContaining({
-      title: '온기 | 우리 사이에 온기를',
-      url: 'https://ongi.greengroove.app/',
-    })));
+    await waitFor(() =>
+      expect(share).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '온기 | 우리 사이에 온기를',
+          url: 'https://ongi.greengroove.app/',
+        }),
+      ),
+    );
     expect(screen.queryByText('온기 링크를 공유했어요.')).toBeNull();
   });
 
@@ -71,10 +75,12 @@ describe('온기 링크 공유', () => {
       value: share,
     });
 
-    expect(await shareAppLink({
-      title: '최애 월드컵 | 온기',
-      url: 'https://ongi.greengroove.app/share/ideal-world-cup/',
-    })).toBe('shared');
+    expect(
+      await shareAppLink({
+        title: '최애 월드컵 | 온기',
+        url: 'https://ongi.greengroove.app/share/ideal-world-cup/',
+      }),
+    ).toBe('shared');
     expect(share).toHaveBeenCalledWith({
       title: '최애 월드컵 | 온기',
       url: 'https://ongi.greengroove.app/share/ideal-world-cup/',
