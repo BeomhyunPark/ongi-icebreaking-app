@@ -21,14 +21,9 @@ export function preloadGureumiResultImage(characterKey: string): Promise<File> {
   );
 }
 
-export async function saveGureumiResultImage(
-  characterKey: string,
-): Promise<ResultImageAction> {
+export async function saveGureumiResultImage(characterKey: string): Promise<ResultImageAction> {
   const imageSrc = getGureumiResultImageSrc(characterKey);
-  const file = await loadResultImageFile(
-    imageSrc,
-    getGureumiResultImageFilename(characterKey),
-  );
+  const file = await loadResultImageFile(imageSrc, getGureumiResultImageFilename(characterKey));
 
   return saveResultImageFile(file, imageSrc);
 }
