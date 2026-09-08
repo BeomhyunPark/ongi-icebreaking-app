@@ -1,13 +1,20 @@
 import type { Ladder, PrayerSupportAssignment } from './draw';
 
-export type DrawResult = {
-  mode: PickerMode;
-  orderedNames: string[];
-  winnerCount: number;
-  ladder: Ladder | null;
+export type DrawResult = { orderedNames: string[] } & (
+  | { mode: 'prayer' | 'sharing' }
+  | { mode: 'lottery'; winnerCount: number }
+  | { mode: 'ladder'; ladder: Ladder; outcomes: string[] }
+  | { mode: 'groups' | 'pairs'; groups: string[][] }
+  | { mode: 'supporter'; supportAssignments: PrayerSupportAssignment<string>[] }
+);
+
+export type PickerSetup = {
+  names: string[];
+  nameDraft: string;
   outcomes: string[];
-  groups: string[][];
-  supportAssignments: PrayerSupportAssignment<string>[];
+  outcomeDraft: string;
+  winnerCount: number;
+  groupCount: number;
 };
 
 export type PickerMode =
