@@ -275,3 +275,22 @@
   --activity-share-accent: #b4a0ff !important;
   --activity-share-secondary: #9cbcf5 !important;
 }
+.share-feedback {
+  position: fixed;
+  z-index: 100;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 3rem);
+  margin: 0;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid #6a657b;
+  border-radius: 1rem;
+  background: #292334;
+  color: #fff;
+  box-shadow: 0 0.5rem 2rem #0005;
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}

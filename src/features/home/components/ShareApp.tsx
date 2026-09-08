@@ -1,8 +1,17 @@
 import { shareAppLink } from '../services/shareAppLink';
+import { useState } from 'react';
+import { ShareNotice, useShareNotice } from '../../../components/ShareNotice';
 
 export function ShareApp() {
+  const [busy, setBusy] = useState(false);
+  const { message, clearNotice, reportShare } = useShareNotice();
   const handleShare = async () => {
-    await shareAppLink();
+    if (busy) return;
+    setBusy(true);
+    clearNotice();
+    try { reportShare(await shareAppLink()); }
+    catch { reportShare('failed'); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -11,6 +20,7 @@ export function ShareApp() {
         className="share-app__button"
         type="button"
         aria-label="공유하기"
+        disabled={busy}
         onClick={handleShare}
       >
         <span aria-hidden="true">
@@ -22,6 +32,7 @@ export function ShareApp() {
           </svg>
         </span>
       </button>
+      <ShareNotice message={message} />
     </div>
   );
 }
