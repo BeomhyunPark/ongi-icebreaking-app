@@ -710,3 +710,16 @@
 .anonymous-sharing-entry { padding-top: clamp(1.5rem, 6vh, 3rem); }
 .anonymous-sharing-entry-actions { margin-top: 1.25rem; }
 .anonymous-sharing-screen button:disabled { opacity: 0.5; cursor: not-allowed; }
+.anonymous-sharing-room-code {
+  display: block;
+  margin: 0.75rem 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+}
+.anonymous-sharing-guide summary {
+  min-height: 2.75rem;
+  display: list-item;
+  align-content: center;
+  color: #8de6d9;
+  cursor: pointer;
+}

@@ -100,14 +100,18 @@ describe('익명 자기소개 나눔', () => {
     });
   });
 
-  it('시작 화면에서는 참여 코드를 입력할 수 없다', () => {
+  it('참여자는 별도 입구에서 코드를 입력하고 QR 초대는 그대로 사용할 수 있다', () => {
     window.history.replaceState({}, '', '/?activity=anonymous-sharing');
 
     render(<AnonymousSharingApp onBackHome={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: '진행자로 모임 만들기' })).toBeTruthy();
     expect(screen.queryByText('참여 코드')).toBeNull();
-    expect(screen.queryByRole('button', { name: '참여 코드로 참여하기' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '모임 참여하기' }));
+    expect(screen.getByLabelText('참여 코드')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('참여 코드'), { target: { value: '7kfm-3qpx' } });
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '은혜' } });
+    expect((screen.getByRole('button', { name: '참여하기' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('모든 답변이 비어 있거나 공백뿐이면 작성을 완료할 수 없다', async () => {
@@ -210,7 +214,7 @@ describe('익명 자기소개 나눔', () => {
     render(<AnonymousSharingApp onBackHome={vi.fn()} />);
     expect(await screen.findByText('진행자도 함께 참여할까요?')).toBeTruthy();
     expect(screen.getByRole('img', { name: '모임 참여 QR 코드' })).toBeTruthy();
-    expect(screen.queryByText('7KFM-3QPX')).toBeNull();
+    expect(screen.getByText('7KFM-3QPX')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('내 이름'), { target: { value: '진행자' } });
     fireEvent.click(screen.getByRole('button', { name: '나도 참여하기' }));
 

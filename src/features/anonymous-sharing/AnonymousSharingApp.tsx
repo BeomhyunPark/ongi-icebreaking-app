@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { ShareNotice, useShareNotice } from '../../components/ShareNotice';
+import { shareAppLink } from '../home/services/shareAppLink';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ScreenLayout } from '../../components/ScreenLayout';
@@ -47,14 +49,14 @@ function removeDraft(id: string) {
 }
 
 function HowToPlay() {
-  return <aside className="anonymous-sharing-guide" aria-label="이용 방법">
-    <strong>이렇게 함께해요</strong>
+  return <details className="anonymous-sharing-guide">
+    <summary>이용 방법</summary>
     <ol>
       <li>질문에 답하고 <b>작성 완료</b>를 눌러요. 어려운 질문은 건너뛰어도 돼요.</li>
       <li>익명으로 나온 이야기를 읽고 <b>누구인지 함께 맞혀봐요.</b></li>
       <li>작성자가 <b>이거 저예요</b>를 눌러 이름을 공개해요.</li>
     </ol>
-  </aside>;
+  </details>;
 }
 
 type EntryMode = 'HOME' | 'CREATE' | 'JOIN';
@@ -105,6 +107,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
   const draft = useRef<Record<string, string>>({});
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [cancelConfirming, setCancelConfirming] = useState(false);
+  const { message: shareMessage, clearNotice, reportShare } = useShareNotice();
 
   useEffect(() => {
     if (entryMode === 'HOME') return;
@@ -373,6 +376,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
     return (
       <ScreenLayout className="anonymous-sharing-screen">
         <Header onBackHome={handleBackHome} />
+        {entryMode === 'HOME' ? <>
         <section className="anonymous-sharing-entry">
           <div className="anonymous-sharing-symbol" aria-hidden="true">♡</div>
           <p className="eyebrow">온기 · 소그룹 나눔</p>
@@ -381,9 +385,11 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
         </section>
 
         <HowToPlay />
+        </> : null}
         {entryMode === 'HOME' ? (
           <div className="anonymous-sharing-entry-actions">
             <PrimaryButton onClick={() => setEntryMode('CREATE')}>진행자로 모임 만들기</PrimaryButton>
+            <PrimaryButton onClick={() => setEntryMode('JOIN')}>모임 참여하기</PrimaryButton>
           </div>
         ) : null}
 
@@ -405,7 +411,14 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
 
         {entryMode === 'JOIN' ? (
           <section className="anonymous-sharing-form" aria-labelledby="join-room-title">
-            <h2 ref={entryHeading} id="join-room-title" tabIndex={-1}>QR로 모임에 참여하기</h2>
+            <h2 ref={entryHeading} id="join-room-title" tabIndex={-1}>모임 참여하기</h2>
+            {!initialHash.joinCode ? <>
+              <label htmlFor="sharing-code">참여 코드</label>
+              <input id="sharing-code" value={roomCode} placeholder="예: 7KFM-3QPX" maxLength={9}
+                autoCapitalize="characters" autoComplete="off" spellCheck={false}
+                onChange={event => setRoomCode(event.target.value.toUpperCase().replace(/\s/g, ''))} />
+              <p className="anonymous-sharing-help">진행자의 QR이나 초대 링크로도 참여할 수 있어요.</p>
+            </> : null}
             <label htmlFor="sharing-name">이름</label>
             <input
               id="sharing-name"
@@ -415,7 +428,7 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
               placeholder="모임에서 사용할 이름"
               onChange={(event) => setName(event.target.value)}
             />
-            <PrimaryButton disabled={busy || !name.trim()} onClick={joinRoom}>
+            <PrimaryButton disabled={busy || !name.trim() || !/^[A-Z0-9]{8}$/.test(roomCode.replace(/-/g, ''))} onClick={joinRoom}>
               {busy ? '입장하는 중…' : '참여하기'}
             </PrimaryButton>
             <button type="button" onClick={() => setEntryMode('HOME')}>이전으로</button>
@@ -467,6 +480,13 @@ export function AnonymousSharingApp({ onBackHome }: AnonymousSharingAppProps) {
                 <QRCodeSVG value={shareUrl} size={164} level="M" marginSize={2} />
               </div>
               <p>카메라로 QR을 스캔해 참여해주세요.</p>
+              <strong className="anonymous-sharing-room-code">{visibleRoomCode}</strong>
+              <button type="button" onClick={async () => {
+                clearNotice();
+                try { reportShare(await shareAppLink({ title: '온기 모임 초대', url: shareUrl })); }
+                catch { reportShare('failed'); }
+              }}>초대 링크 공유</button>
+              <ShareNotice message={shareMessage} />
             </div>
           ) : (
             <div className="anonymous-sharing-locked"><span aria-hidden="true">✓</span> 참여자 입장을 마감했어요.</div>
