@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { ShareNotice, useShareNotice } from '../../components/ShareNotice';
 import { ProgressBar } from '../../components/ProgressBar';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import {
@@ -126,8 +127,11 @@ export function IdealWorldCupApp({
   const [savedSession, setSavedSession] = useState<WorldCupSession | null>(
     () => loadWorldCupSession(VALID_CANDIDATE_IDS, VALID_CATEGORY_IDS),
   );
-  const [activeSession, setActiveSession] = useState<WorldCupSession | null>(null);
+  const [activeSession, setActiveSession] = useState<WorldCupSession | null>(() => (
+    savedSession?.categoryId === initialWorldCupCategory && savedSession.current.phase === 'champion' ? savedSession : null
+  ));
   const [isSharingResult, setIsSharingResult] = useState(false);
+  const { message, clearNotice, reportShare } = useShareNotice();
 
   useEffect(() => {
     if (!activeSession) {
@@ -328,7 +332,7 @@ export function IdealWorldCupApp({
       .map((match) => findCandidate(match.leftId === champion.id ? match.rightId : match.leftId));
     const shareResult = async () => {
       setIsSharingResult(true);
-
+      clearNotice();
 
       try {
         const file = await createWorldCupResultFile({
@@ -337,13 +341,14 @@ export function IdealWorldCupApp({
           tournamentSize: state.tournamentSize,
         });
         const action = await shareWorldCupResultFile(file);
+        reportShare(action);
 
         if (action === 'shared') {
           void recordShareClick('ideal-world-cup', 'native');
         }
 
       } catch {
-
+        reportShare('failed');
       } finally {
         setIsSharingResult(false);
       }
@@ -372,6 +377,12 @@ export function IdealWorldCupApp({
           <span>끝으로 한마디</span>
           <p>{activeCategory.closingMessage}</p>
         </aside>
+
+        <details className="world-cup-conversation">
+          <summary>함께 이야기하기</summary>
+          <p>{champion.name}을 고른 이유는 무엇인가요?</p>
+        </details>
+        <ShareNotice message={message} />
 
         <div className="world-cup-champion__actions">
           <PrimaryButton disabled={isSharingResult} onClick={shareResult}>
