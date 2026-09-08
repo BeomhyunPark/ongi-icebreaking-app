@@ -5,6 +5,7 @@ import axe from 'axe-core';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { App } from '../src/app/App';
+import { RELEASES } from '../src/features/updates/releaseHistory';
 
 afterEach(() => {
   cleanup();
@@ -17,7 +18,7 @@ describe('업데이트 내역', () => {
 
     document.documentElement.scrollTop = 1200;
     document.body.scrollTop = 1200;
-    fireEvent.click(screen.getByRole('button', { name: 'v2.2.1 · 업데이트 내역' }));
+    fireEvent.click(screen.getByRole('button', { name: `${RELEASES[0].version} · 업데이트 내역` }));
 
     expect(screen.getByRole('heading', { name: '업데이트 내역', level: 1 })).toBeTruthy();
     expect(screen.getByRole('heading', { name: '콘텐츠는 달라도, 온기는 하나' })).toBeTruthy();
