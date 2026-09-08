@@ -4,7 +4,7 @@ import {
   preloadResultImage,
   saveResultImageFile,
   type ResultImageAction,
-} from '../../heart-trace/services/resultImage';
+} from '../../../platform/resultImage';
 
 export function getGureumiResultImageSrc(characterKey: string): string {
   return assetUrl(`images/results/gureumi/${characterKey}-story.png`);

@@ -6,7 +6,7 @@ import { getShareTarget } from '../app/shareTargets';
 import {
   buildActivityShareUrl,
   shareAppLink,
-} from '../features/home/services/shareAppLink';
+} from '../platform/shareLink';
 import { getEngagementContentCode } from '../engagement/contentCodes';
 import { recordShareClick } from '../engagement/tracker';
 

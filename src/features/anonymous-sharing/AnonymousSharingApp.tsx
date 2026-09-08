@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ShareNotice, useShareNotice } from '../../components/ShareNotice';
-import { shareAppLink } from '../home/services/shareAppLink';
+import { shareAppLink } from '../../platform/shareLink';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ScreenLayout } from '../../components/ScreenLayout';

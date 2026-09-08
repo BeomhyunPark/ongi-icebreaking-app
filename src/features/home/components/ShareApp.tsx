@@ -1,4 +1,4 @@
-import { shareAppLink } from '../services/shareAppLink';
+import { shareAppLink } from '../../../platform/shareLink';
 import { useState } from 'react';
 import { ShareNotice, useShareNotice } from '../../../components/ShareNotice';
 

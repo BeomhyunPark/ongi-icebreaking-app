@@ -6,7 +6,7 @@ import { assetUrl } from '../../../utils/assetUrl';
 import {
   buildActivityShareUrl,
   shareAppLink,
-} from '../../home/services/shareAppLink';
+} from '../../../platform/shareLink';
 
 type GureumiIntroScreenProps = {
   answeredCount: number;

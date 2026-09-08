@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ShareApp } from '../src/features/home/components/ShareApp';
-import { shareAppLink } from '../src/features/home/services/shareAppLink';
+import { shareAppLink } from '../src/platform/shareLink';
 
 beforeEach(() => {
   const canonical = document.createElement('link');
