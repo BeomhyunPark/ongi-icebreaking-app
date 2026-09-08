@@ -16,6 +16,7 @@ type GureumiResultScreenProps = {
   retestStarting?: boolean;
   onOpenFeedback?: () => void;
   onRetest?: () => void;
+  onBackHome?: () => void;
 };
 
 type ResultVariables = CSSProperties & {
@@ -55,6 +56,7 @@ export function GureumiResultScreen({
   retestStarting = false,
   onOpenFeedback,
   onRetest,
+  onBackHome,
 }: GureumiResultScreenProps) {
   const definition = GUREUMI_RESULTS[result.resultType];
   const [saveMessage, setSaveMessage] = useState('');
@@ -141,6 +143,11 @@ export function GureumiResultScreen({
   return (
     <main className="gureumi-result" style={style}>
       <article className="gureumi-result__card" aria-label={`${definition.name} 결과`}>
+        {onBackHome ? (
+          <nav className="gureumi-toolbar" aria-label="구르미 결과 탐색">
+            <button type="button" onClick={onBackHome}>← 홈</button>
+          </nav>
+        ) : null}
         <header className="gureumi-result__hero">
           <p>{definition.englishType} · GUREUMI TYPE</p>
           <span>당신의 구르미는</span>

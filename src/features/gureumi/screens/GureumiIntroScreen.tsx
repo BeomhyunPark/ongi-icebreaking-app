@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ShareNotice, useShareNotice } from '../../../components/ShareNotice';
 
 import { getShareTarget } from '../../../app/shareTargets';
 import { assetUrl } from '../../../utils/assetUrl';
@@ -29,6 +30,7 @@ export function GureumiIntroScreen({
   onBackHome,
 }: GureumiIntroScreenProps) {
   const [sharing, setSharing] = useState(false);
+  const { message, clearNotice, reportShare } = useShareNotice();
 
   const handleShare = async () => {
     if (sharing) return;
@@ -37,13 +39,15 @@ export function GureumiIntroScreen({
     if (!shareTarget) return;
 
     setSharing(true);
+    clearNotice();
 
     try {
-      await shareAppLink({
+      reportShare(await shareAppLink({
         title: shareTarget.title,
         url: buildActivityShareUrl(shareTarget.slug),
-      });
+      }));
 
+    } catch { reportShare('failed');
     } finally {
       setSharing(false);
     }
@@ -109,6 +113,7 @@ export function GureumiIntroScreen({
           </span>
           <span className="gureumi-intro__share-arrow" aria-hidden="true">↗</span>
         </button>
+        <ShareNotice message={message} />
         <p className="gureumi-credit">유형, 문항 디자인 · 권봉준 · hyunee</p>
         <p className="gureumi-credit">기획, UIUX, 개발 · hyunee</p>
 

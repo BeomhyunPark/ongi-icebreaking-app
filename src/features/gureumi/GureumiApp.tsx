@@ -69,10 +69,11 @@ export function GureumiApp({ onBackHome }: GureumiAppProps) {
         if (!active) return;
         setReference(saved);
         if (state.completed) {
-          clearGureumiAttempt();
-          setReference(null);
+          const completedResult = await gureumiApi.getResult(saved.attemptId, saved.resumeToken);
+          if (!active) return;
+          setResult(completedResult);
           setResumeState(null);
-          setPhase('intro');
+          setPhase('result');
         } else {
           setResumeState(state);
           setPhase('intro');
@@ -289,6 +290,7 @@ export function GureumiApp({ onBackHome }: GureumiAppProps) {
         retestStarting={busy}
         onOpenFeedback={() => void handleOpenFeedback()}
         onRetest={handleRetest}
+        onBackHome={onBackHome}
       />
     );
   }

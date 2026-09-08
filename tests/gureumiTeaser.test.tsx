@@ -158,12 +158,17 @@ describe('구르미 테스트 Beta', () => {
     expect(screen.getAllByRole('radio').filter((radio) => (radio as HTMLInputElement).checked)).toHaveLength(5);
   });
 
-  it('완료 후 홈에서 다시 들어오면 이전 결과 대신 새 테스트 인트로를 연다', async () => {
+  it('완료 후 다시 들어오면 저장된 토큰으로 이전 결과를 복원한다', async () => {
     window.localStorage.setItem('ongi_gureumi_attempt_v01', JSON.stringify({
       attemptId: ATTEMPT_ID,
       resumeToken: RESUME_TOKEN,
     }));
-    const fetchMock = vi.fn(async () => json({
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).endsWith('/result')) return json({
+        attemptId: ATTEMPT_ID, version: 'GUREUMI_BETA_V01', resultType: 'SUNNY',
+        characterKey: 'sunny', displayName: '쨍이', axes: [],
+      });
+      return json({
       attemptId: ATTEMPT_ID,
       version: 'GUREUMI_BETA_V01',
       attemptNo: 1,
@@ -173,14 +178,17 @@ describe('구르미 테스트 Beta', () => {
       answers: [],
       startedAt: '2026-09-03T00:00:00Z',
       completedAt: '2026-09-03T00:05:00Z',
-    }));
+      });
+    });
     vi.stubGlobal('fetch', fetchMock);
     window.history.replaceState({}, '', '/?activity=gureumi');
 
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: 'Beta 테스트 시작하기' })).toBeTruthy();
-    expect(window.localStorage.getItem('ongi_gureumi_attempt_v01')).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('heading', { name: '쨍이', level: 1 })).toBeTruthy();
+    expect(window.localStorage.getItem('ongi_gureumi_attempt_v01')).not.toBeNull();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).endsWith('/result'))).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '← 홈' }));
+    expect(await screen.findByRole('heading', { name: '우리 사이에 온기를' })).toBeTruthy();
   });
 });
