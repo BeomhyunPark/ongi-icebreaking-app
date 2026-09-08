@@ -78,3 +78,11 @@ export type CurrentSharing = {
   canReveal: boolean;
   roomVersion: number;
 };
+
+export type RoomSnapshot = {
+  roomState: RoomState;
+  participants: ParticipantStatus[];
+  questions: Question[];
+  answers: Record<string, string>;
+  sharing: CurrentSharing | null;
+};
