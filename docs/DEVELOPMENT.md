@@ -6,13 +6,15 @@
 
 - Frontend: React 19, TypeScript, Vite
 - Backend: Java 21, Spring Boot, Gradle
-- Database: PostgreSQL 16, Flyway
+- Database: PostgreSQL, Flyway (로컬 개발: 16)
 - 실시간 갱신: Server-Sent Events
 - 테스트: Vitest, Testing Library, axe-core, Spring Boot Test, Testcontainers
 - Frontend 배포: GitHub Pages, GitHub Actions
-- Backend 운영: Surface Pro 홈서버, Docker Compose, Cloudflare Tunnel
+- Backend 운영: Railway, Dockerfile 빌드, Railway PostgreSQL
 
 운영 환경은 `ongi.greengroove.app`의 정적 frontend와 `ongi-api.greengroove.app`의 API로 분리됩니다.
+
+처음 수정한다면 [코드 구조와 수정 위치](./ARCHITECTURE.md)를 먼저 확인하세요. 기능별 진입점, 상태 전이, 저장소 호환성, 검증 명령을 정리했습니다.
 
 ## 저장소 구조
 
@@ -184,7 +186,9 @@ Repository variable:
 VITE_API_BASE_URL=https://ongi-api.greengroove.app
 ```
 
-## Surface Pro 홈서버
+## 이전 운영 환경 — Surface Pro 홈서버
+
+아래 내용은 이전 환경과 복구 참고용입니다. 현재 운영 배포는 Railway에서 관리하며, 일반 배포를 위해 이 절차를 실행하지 않습니다.
 
 PostgreSQL은 Docker network 내부에서만 접근하고 Backend는 Surface의 `127.0.0.1:8080`에 공개합니다. 외부 연결은 공유기 port forwarding 대신 Cloudflare Tunnel을 사용합니다.
 
@@ -244,11 +248,11 @@ scripts/home-server/install-autodeploy-cron.sh --remove
 
 초 단위 감시가 필요하면 [systemd service](../deploy/systemd/ongi-backend-autodeploy.service)를 사용할 수 있습니다. Cron과 systemd를 동시에 실행해도 lock으로 중복 배포는 막지만 운영 방식은 하나만 선택합니다.
 
-## 관리형 호스팅 이전
+## 현재 운영 환경 — Railway
 
-홈서버 운영이 어려워질 경우 Railway 같은 관리형 환경으로 옮길 수 있습니다.
+현재 Backend와 PostgreSQL은 Railway에서 운영합니다. `master`의 GitHub 검증이 통과하면 연결된 Backend 서비스가 자동 배포됩니다.
 
-현재 운영 전환 절차는 [Railway Backend 배포 가이드](./RAILWAY_DEPLOYMENT.md)를 따릅니다. 새 Railway PostgreSQL에서 시작하며 기존 홈서버 데이터는 이전하지 않습니다. Railway의 Config as Code 대신 서비스 대시보드에서 build·deploy 설정을 관리합니다.
+초기 구성 기록은 [Railway Backend 배포 가이드](./RAILWAY_DEPLOYMENT.md)에 있습니다. 이 문서의 새 DB 생성 절차를 일상적인 배포에 적용하지 않습니다. 기존 운영 DB를 유지하고, 서비스 대시보드에서 build·deploy 설정을 관리합니다.
 
 1. Backend source root를 `/backend`로 지정합니다.
 2. Backend와 PostgreSQL을 같은 region에 둡니다.
