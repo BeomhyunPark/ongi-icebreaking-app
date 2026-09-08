@@ -1,5 +1,8 @@
 package app.ongi.sharing.sharing;
 
+import app.ongi.sharing.common.StateTransitionException;
+import app.ongi.sharing.common.StateTransitionException.Reason;
+
 import static app.ongi.sharing.sharing.SharingDtos.CurrentSharingResponse;
 import static app.ongi.sharing.sharing.SharingDtos.PublicSharingState;
 import static app.ongi.sharing.sharing.SharingDtos.SharedAnswer;
@@ -68,7 +71,7 @@ public class SharingService {
         }
         try {
             room.startSharing(expectedVersion);
-        } catch (IllegalStateException exception) {
+        } catch (StateTransitionException exception) {
             throw stateConflict(exception);
         }
         Collections.shuffle(participants, secureRandom);
@@ -118,11 +121,11 @@ public class SharingService {
             .orElseThrow(() -> conflict("ROUND_NOT_FOUND", "현재 이야기를 찾을 수 없어요."));
         try {
             if (room.getCurrentRound() != expectedRound) {
-                throw new IllegalStateException("ROUND_CHANGED");
+                throw new StateTransitionException(Reason.ROUND_CHANGED);
             }
             round.complete(clock.instant());
             room.advanceRound(expectedVersion, expectedRound, Math.toIntExact(total));
-        } catch (IllegalStateException exception) {
+        } catch (StateTransitionException exception) {
             throw stateConflict(exception);
         }
         roomRepository.flush();
@@ -138,7 +141,7 @@ public class SharingService {
         Instant now = clock.instant();
         try {
             room.complete(now, expectedVersion, total);
-        } catch (IllegalStateException exception) {
+        } catch (StateTransitionException exception) {
             throw stateConflict(exception);
         }
         roomRepository.flush();
@@ -185,11 +188,11 @@ public class SharingService {
         }
     }
 
-    private ApiException stateConflict(IllegalStateException exception) {
-        return switch (exception.getMessage()) {
-            case "ROOM_VERSION_MISMATCH", "ROUND_CHANGED" -> conflict("STATE_CHANGED", "모임 상태가 변경되었습니다. 다시 확인해주세요.");
-            case "ROUND_NOT_REVEALED" -> conflict("ROUND_NOT_REVEALED", "작성자가 자신을 공개한 뒤 다음 이야기로 넘어갈 수 있어요.");
-            case "SHARING_NOT_FINISHED" -> conflict("SHARING_NOT_FINISHED", "모든 이야기를 마친 뒤 모임을 종료할 수 있어요.");
+    private ApiException stateConflict(StateTransitionException exception) {
+        return switch (exception.reason()) {
+            case ROOM_VERSION_MISMATCH, ROUND_CHANGED -> conflict("STATE_CHANGED", "모임 상태가 변경되었습니다. 다시 확인해주세요.");
+            case ROUND_NOT_REVEALED -> conflict("ROUND_NOT_REVEALED", "작성자가 자신을 공개한 뒤 다음 이야기로 넘어갈 수 있어요.");
+            case SHARING_NOT_FINISHED -> conflict("SHARING_NOT_FINISHED", "모든 이야기를 마친 뒤 모임을 종료할 수 있어요.");
             default -> conflict("INVALID_STATE_TRANSITION", "지금은 요청한 동작을 실행할 수 없어요.");
         };
     }

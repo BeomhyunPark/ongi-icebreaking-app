@@ -1,5 +1,8 @@
 package app.ongi.sharing.room;
 
+import app.ongi.sharing.common.StateTransitionException;
+import app.ongi.sharing.common.StateTransitionException.Reason;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -77,10 +80,10 @@ public class Room {
 
     public void lock(long expectedVersion) {
         if (version != expectedVersion) {
-            throw new IllegalStateException("ROOM_VERSION_MISMATCH");
+            throw new StateTransitionException(Reason.ROOM_VERSION_MISMATCH);
         }
         if (status != RoomStatus.CREATED && status != RoomStatus.WRITING) {
-            throw new IllegalStateException("ROOM_NOT_LOCKABLE");
+            throw new StateTransitionException(Reason.ROOM_NOT_LOCKABLE);
         }
         status = RoomStatus.LOCKED;
     }
@@ -88,7 +91,7 @@ public class Room {
     public void unlock(long expectedVersion) {
         requireVersion(expectedVersion);
         if (status != RoomStatus.LOCKED) {
-            throw new IllegalStateException("ROOM_NOT_UNLOCKABLE");
+            throw new StateTransitionException(Reason.ROOM_NOT_UNLOCKABLE);
         }
         status = RoomStatus.WRITING;
     }
@@ -96,14 +99,14 @@ public class Room {
     public void requireCancellable(long expectedVersion) {
         requireVersion(expectedVersion);
         if (status != RoomStatus.CREATED && status != RoomStatus.WRITING && status != RoomStatus.LOCKED) {
-            throw new IllegalStateException("ROOM_NOT_CANCELLABLE");
+            throw new StateTransitionException(Reason.ROOM_NOT_CANCELLABLE);
         }
     }
 
     public void startSharing(long expectedVersion) {
         requireVersion(expectedVersion);
         if (status != RoomStatus.LOCKED) {
-            throw new IllegalStateException("ROOM_NOT_READY_FOR_SHARING");
+            throw new StateTransitionException(Reason.ROOM_NOT_READY_FOR_SHARING);
         }
         status = RoomStatus.SHARING;
         currentRound = 0;
@@ -112,7 +115,7 @@ public class Room {
     public void advanceRound(long expectedVersion, int expectedRound, int totalRounds) {
         requireVersion(expectedVersion);
         if (status != RoomStatus.SHARING || currentRound != expectedRound || currentRound >= totalRounds) {
-            throw new IllegalStateException("ROUND_CHANGED");
+            throw new StateTransitionException(Reason.ROUND_CHANGED);
         }
         currentRound += 1;
     }
@@ -120,7 +123,7 @@ public class Room {
     public void complete(Instant now, long expectedVersion, int totalRounds) {
         requireVersion(expectedVersion);
         if (status != RoomStatus.SHARING || currentRound < totalRounds) {
-            throw new IllegalStateException("SHARING_NOT_FINISHED");
+            throw new StateTransitionException(Reason.SHARING_NOT_FINISHED);
         }
         status = RoomStatus.COMPLETED;
         completedAt = now;
@@ -128,7 +131,7 @@ public class Room {
 
     private void requireVersion(long expectedVersion) {
         if (version != expectedVersion) {
-            throw new IllegalStateException("ROOM_VERSION_MISMATCH");
+            throw new StateTransitionException(Reason.ROOM_VERSION_MISMATCH);
         }
     }
 

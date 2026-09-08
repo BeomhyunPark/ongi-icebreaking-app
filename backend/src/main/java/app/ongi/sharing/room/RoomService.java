@@ -1,5 +1,8 @@
 package app.ongi.sharing.room;
 
+import app.ongi.sharing.common.StateTransitionException;
+import app.ongi.sharing.common.StateTransitionException.Reason;
+
 import static app.ongi.sharing.room.RoomDtos.CreateRoomResponse;
 import static app.ongi.sharing.room.RoomDtos.RoomStateResponse;
 import static app.ongi.sharing.room.RoomDtos.CancelRoomResponse;
@@ -102,8 +105,8 @@ public class RoomService {
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
         try {
             room.lock(expectedVersion);
-        } catch (IllegalStateException exception) {
-            if ("ROOM_VERSION_MISMATCH".equals(exception.getMessage())) {
+        } catch (StateTransitionException exception) {
+            if (exception.reason() == Reason.ROOM_VERSION_MISMATCH) {
                 throw new ApiException(HttpStatus.CONFLICT, "STATE_CHANGED", "모임 상태가 변경되었습니다. 다시 확인해주세요.");
             }
             throw new ApiException(HttpStatus.CONFLICT, "ROOM_NOT_LOCKABLE", "지금은 모임 입장을 마감할 수 없어요.");
@@ -122,8 +125,8 @@ public class RoomService {
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
         try {
             room.unlock(expectedVersion);
-        } catch (IllegalStateException exception) {
-            if ("ROOM_VERSION_MISMATCH".equals(exception.getMessage())) {
+        } catch (StateTransitionException exception) {
+            if (exception.reason() == Reason.ROOM_VERSION_MISMATCH) {
                 throw new ApiException(HttpStatus.CONFLICT, "STATE_CHANGED", "모임 상태가 변경되었습니다. 다시 확인해주세요.");
             }
             throw new ApiException(HttpStatus.CONFLICT, "ROOM_NOT_UNLOCKABLE", "지금은 참여자 입장을 다시 열 수 없어요.");
@@ -142,8 +145,8 @@ public class RoomService {
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
         try {
             room.requireCancellable(expectedVersion);
-        } catch (IllegalStateException exception) {
-            if ("ROOM_VERSION_MISMATCH".equals(exception.getMessage())) {
+        } catch (StateTransitionException exception) {
+            if (exception.reason() == Reason.ROOM_VERSION_MISMATCH) {
                 throw new ApiException(HttpStatus.CONFLICT, "STATE_CHANGED", "모임 상태가 변경되었습니다. 다시 확인해주세요.");
             }
             throw new ApiException(HttpStatus.CONFLICT, "ROOM_NOT_CANCELLABLE", "나눔이 시작된 뒤에는 방을 없앨 수 없어요.");

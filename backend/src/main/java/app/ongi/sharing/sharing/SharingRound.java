@@ -1,5 +1,8 @@
 package app.ongi.sharing.sharing;
 
+import app.ongi.sharing.common.StateTransitionException;
+import app.ongi.sharing.common.StateTransitionException.Reason;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -59,7 +62,7 @@ public class SharingRound {
 
     public void complete(Instant now) {
         if (status != SharingStatus.REVEALED) {
-            throw new IllegalStateException("ROUND_NOT_REVEALED");
+            throw new StateTransitionException(Reason.ROUND_NOT_REVEALED);
         }
         status = SharingStatus.COMPLETED;
         completedAt = now;
