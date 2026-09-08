@@ -6,6 +6,7 @@ import {
 } from 'react';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { ShareNotice, useShareNotice } from '../../components/ShareNotice';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import {
   createLadder,
@@ -16,12 +17,12 @@ import {
   splitIntoPairs,
   traceLadder,
   type Ladder,
-  type PrayerSupportAssignment,
 } from './domain/draw';
 import { getPickerModeDefinition, PICKER_MODES } from './domain/modeCatalog';
 import { getSpecialOutcomeValues } from './domain/outcomes';
-import type { PickerMode } from './domain/types';
+import type { DrawResult, PickerMode } from './domain/types';
 import { loadGroupNames, saveGroupNames } from './services/nameStorage';
+import { loadPickerSession, savePickerSession } from './services/sessionStorage';
 import {
   createGroupPickerResultFile,
   shareGroupPickerResultFile,
@@ -40,16 +41,6 @@ type GroupPickerAppProps = {
   onGroupPickerModeChange?: (mode: PickerMode) => void;
 };
 type PickerPhase = 'setup' | 'drawing' | 'result';
-
-type DrawResult = {
-  mode: PickerMode;
-  orderedNames: string[];
-  winnerCount: number;
-  ladder: Ladder | null;
-  outcomes: string[];
-  groups: string[][];
-  supportAssignments: PrayerSupportAssignment<string>[];
-};
 
 type ItemEditorProps = {
   id: string;
@@ -80,9 +71,11 @@ function mergeItems(
   const merged = [...items];
 
   for (const item of parseItems(value)) {
-    if ((allowDuplicates || !merged.includes(item)) && merged.length < max) {
-      merged.push(item);
-    }
+    if (merged.length >= max) break;
+    let uniqueName = item;
+    let suffix = 2;
+    while (!allowDuplicates && merged.includes(uniqueName)) uniqueName = `${item} (${suffix++})`;
+    merged.push(uniqueName);
   }
 
   return merged;
@@ -99,14 +92,25 @@ function ItemEditor({
   onDraftChange,
   onItemsChange,
 }: ItemEditorProps) {
+  const [notice, setNotice] = useState('');
+  const addItems = (value: string) => {
+    const added = parseItems(value);
+    const merged = mergeItems(items, value, max, allowDuplicates);
+    const duplicated = !allowDuplicates && new Set([...items, ...added]).size < items.length + added.length;
+    setNotice([
+      duplicated ? '같은 이름은 번호로 구분했어요.' : '',
+      items.length + added.length > max ? `최대 ${max}개예요. 초과한 항목은 입력란에 남겼어요.` : '',
+    ].filter(Boolean).join(' '));
+    onItemsChange(merged);
+    onDraftChange(added.slice(max - items.length).join(', '));
+  };
   const addDraft = () => {
     if (!draft.trim()) return;
-    onItemsChange(mergeItems(items, draft, max, allowDuplicates));
-    onDraftChange('');
+    addItems(draft);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' || event.key === ',') {
+    if (!event.nativeEvent.isComposing && (event.key === 'Enter' || event.key === ',')) {
       event.preventDefault();
       addDraft();
     }
@@ -117,6 +121,7 @@ function ItemEditor({
       <div className="group-picker-editor__field">
         <input
           id={id}
+          aria-label={label}
           value={draft}
           type="text"
           autoComplete="off"
@@ -127,13 +132,13 @@ function ItemEditor({
             const pasted = event.clipboardData.getData('text');
             if (/[\n,]/.test(pasted)) {
               event.preventDefault();
-              onItemsChange(mergeItems(items, pasted, max, allowDuplicates));
-              onDraftChange('');
+              addItems(pasted);
             }
           }}
         />
         <button type="button" onClick={addDraft} disabled={!draft.trim() || items.length >= max}>추가</button>
       </div>
+      {notice ? <p className="group-picker-input-notice" role="status">{notice}</p> : null}
       {items.length > 0 ? (
         <div className="group-picker-chips" aria-label={`${label} 목록`}>
           {items.map((item, itemIndex) => (
@@ -248,21 +253,31 @@ export function GroupPickerApp({
   onGroupPickerModeChange,
 }: GroupPickerAppProps) {
   const storedNames = useMemo(loadGroupNames, []);
-  const [phase, setPhase] = useState<PickerPhase>('setup');
+  const [savedSession] = useState(() => loadPickerSession(initialGroupPickerMode));
+  const [phase, setPhase] = useState<PickerPhase>(savedSession?.result ? 'result' : 'setup');
   const [mode, setMode] = useState<PickerMode>(initialGroupPickerMode);
-  const [names, setNames] = useState<string[]>(storedNames);
-  const [nameDraft, setNameDraft] = useState('');
-  const [outcomes, setOutcomes] = useState<string[]>([]);
-  const [outcomeDraft, setOutcomeDraft] = useState('');
-  const [winnerCount, setWinnerCount] = useState(1);
-  const [groupCount, setGroupCount] = useState(2);
-  const [result, setResult] = useState<DrawResult | null>(null);
+  const [names, setNames] = useState<string[]>(savedSession?.names ?? storedNames);
+  const [nameDraft, setNameDraft] = useState(savedSession?.nameDraft ?? '');
+  const [outcomes, setOutcomes] = useState<string[]>(savedSession?.outcomes ?? []);
+  const [outcomeDraft, setOutcomeDraft] = useState(savedSession?.outcomeDraft ?? '');
+  const [winnerCount, setWinnerCount] = useState(savedSession?.winnerCount ?? 1);
+  const [groupCount, setGroupCount] = useState(savedSession?.groupCount ?? 2);
+  const [result, setResult] = useState<DrawResult | null>(savedSession?.result ?? null);
   const [error, setError] = useState('');
   const [activeLadderStart, setActiveLadderStart] = useState<number | null>(null);
-  const [revealedLadderStarts, setRevealedLadderStarts] = useState<Set<number>>(new Set());
+  const [revealedLadderStarts, setRevealedLadderStarts] = useState<Set<number>>(new Set(savedSession?.revealed));
   const [revealAllQueue, setRevealAllQueue] = useState<number[] | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const { message, clearNotice, reportShare } = useShareNotice();
   const selectedMode = getPickerModeDefinition(mode);
+
+  useEffect(() => {
+    saveGroupNames(names);
+    savePickerSession(mode, {
+      names, nameDraft, outcomes, outcomeDraft, winnerCount, groupCount, result,
+      revealed: [...revealedLadderStarts],
+    });
+  }, [mode, names, nameDraft, outcomes, outcomeDraft, winnerCount, groupCount, result, revealedLadderStarts]);
 
   useEffect(() => {
     onGroupPickerModeChange?.(mode);
@@ -303,6 +318,10 @@ export function GroupPickerApp({
   }, [activeLadderStart, revealAllQueue, result]);
 
   const prepareDraw = () => {
+    if (names.length + parseItems(nameDraft).length > MAX_PARTICIPANTS) {
+      setError('최대 32명까지 참여할 수 있어요. 입력한 명단을 확인해 주세요.');
+      return;
+    }
     const nextNames = mergeItems(names, nameDraft, MAX_PARTICIPANTS);
     const nextOutcomes = mergeItems(outcomes, outcomeDraft, MAX_PARTICIPANTS, true);
     setNames(nextNames);
@@ -427,22 +446,25 @@ export function GroupPickerApp({
               : '오늘 기도할 사람';
 
       setIsSharing(true);
+      clearNotice();
 
       try {
         const file = await createGroupPickerResultFile({ modeTitle: resultMode.title, resultTitle, entries });
         const action = await shareGroupPickerResultFile(file);
+        reportShare(action);
         if (action === 'shared') {
           void recordShareClick('group-picker', 'native');
         }
 
       } catch {
-
+        reportShare('failed');
       } finally {
         setIsSharing(false);
       }
     };
     return (
       <ScreenLayout className={`group-picker-screen group-picker-result is-${result.mode}`}>
+        <ShareNotice message={message} />
         <button className="test-home-button" type="button" onClick={onBackHome}><span aria-hidden="true">←</span> 홈</button>
         <header className="group-picker-result__header">
           <p className="eyebrow">오늘은 누구? · {resultMode.title}</p>

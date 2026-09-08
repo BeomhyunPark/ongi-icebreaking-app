@@ -27,6 +27,42 @@ async function finishDraw() {
 }
 
 describe('오늘은 누구?', () => {
+  it('동명이인을 누락하지 않고 고유한 이름으로 구분한다', () => {
+    render(<GroupPickerApp onBackHome={vi.fn()} />);
+    addItems('이름 입력', ['민수', '지현', '민수', '민수 (2)']);
+    const participants = screen.getByLabelText('참여자 목록');
+    expect(participants.children).toHaveLength(4);
+    expect(screen.getByText('4/32')).toBeTruthy();
+    expect(participants.textContent).toContain('민수 (2)');
+    expect(participants.textContent).toContain('민수 (2) (2)');
+  });
+
+  it('다시 열어도 재추첨하지 않고 같은 결과를 보여준다', async () => {
+    vi.useFakeTimers();
+    const first = render(<GroupPickerApp onBackHome={vi.fn()} />);
+    addItems('이름 입력', ['민수', '지현', '은혜']);
+    fireEvent.click(screen.getByRole('button', { name: '기도할 사람 정하기' }));
+    await finishDraw();
+    const winner = document.querySelector('.group-picker-prayer-result strong')?.textContent;
+    first.unmount();
+    render(<GroupPickerApp onBackHome={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: '오늘은 바로' })).toBeTruthy();
+    expect(document.querySelector('.group-picker-prayer-result strong')?.textContent).toBe(winner);
+    fireEvent.click(screen.getByRole('button', { name: '설정 바꾸기' }));
+    expect(screen.getByLabelText('참여자 목록').children).toHaveLength(3);
+  });
+
+  it('사다리를 만드는 중에 다시 열어도 기존 사다리를 복구한다', () => {
+    const first = render(<GroupPickerApp initialGroupPickerMode="ladder" onBackHome={vi.fn()} />);
+    addItems('이름 입력', ['민수', '지현', '은혜']);
+    fireEvent.click(screen.getByRole('button', { name: '사다리 만들기' }));
+    const saved = JSON.parse(window.localStorage.getItem('ongi.group-picker.session.v1.ladder')!);
+    first.unmount();
+    render(<GroupPickerApp initialGroupPickerMode="ladder" onBackHome={vi.fn()} />);
+    expect(screen.getByRole('img', { name: '완성된 사다리' })).toBeTruthy();
+    expect(JSON.parse(window.localStorage.getItem('ongi.group-picker.session.v1.ladder')!).result).toEqual(saved.result);
+  });
+
   it('홈 바로가기에서 선택한 도구로 시작한다', () => {
     const onGroupPickerModeChange = vi.fn();
     render(
