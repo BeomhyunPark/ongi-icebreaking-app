@@ -10,7 +10,7 @@ import { ScreenLayout } from '../../../components/ScreenLayout';
 import { StartSoulOrb } from '../../../components/StartSoulOrb';
 
 type IntroScreenProps = {
-  onContinue: () => void;
+  onStart: () => void;
   onBackHome: () => void;
   savedAnswerCount: number;
   savedQuestionNumber: number | null;
@@ -37,7 +37,7 @@ const INTRO_MESSAGES = [
 ] as const;
 
 export function IntroScreen({
-  onContinue,
+  onStart,
   onBackHome,
   savedAnswerCount,
   savedQuestionNumber,
@@ -187,16 +187,16 @@ export function IntroScreen({
       </div>
 
       <div className="intro-screen__button-slot" aria-live="polite">
-        {hasReadAllMessages ? (
-          <PrimaryButton className="intro-screen__button" onClick={onContinue}>나와 닮은 흔적이를 찾아볼까요?</PrimaryButton>
-        ) : (
-          <PrimaryButton
-            className="intro-screen__next-button"
+        <PrimaryButton className="intro-screen__button" onClick={onStart}>바로 시작하기</PrimaryButton>
+        {!hasReadAllMessages ? (
+          <button
+            type="button"
+            className="intro-more-button"
             onClick={() => moveToMessage(Math.min(activeMessageIndex + 1, lastMessageIndex))}
           >
-            다음
-          </PrimaryButton>
-        )}
+            소개 더 읽기
+          </button>
+        ) : null}
       </div>
       <p className="intro-screen__meta">약 4분 · 20문항 · 5유형</p>
       <p className="intro-screen__credit">창작자 · 최유민 · 박은성 · hyunee</p>

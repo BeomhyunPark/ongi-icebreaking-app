@@ -7,6 +7,7 @@ import {
   type ResultTypeId,
 } from '../domain/types';
 import type { TestState } from '../state/testReducer';
+import { readStoredValue, writeStoredValue } from '../../../utils/storage';
 
 const HEART_TRACE_SESSION_KEY = 'ongi.heart-trace.session.v1';
 
@@ -60,11 +61,11 @@ export function parseHeartTraceSession(serialized: string): TestState | null {
     if (
       parsed.version !== 1
       || !state
-      || (state.phase !== 'question' && state.phase !== 'tie-breaker')
+      || !['question', 'tie-breaker', 'result'].includes(state.phase)
       || !Number.isInteger(state.currentQuestionIndex)
       || state.currentQuestionIndex < 0
       || state.currentQuestionIndex >= QUESTIONS.length
-      || state.result !== null
+      || (state.phase !== 'result' && state.result !== null)
       || !Array.isArray(state.tiedTypes)
     ) {
       return null;
@@ -81,6 +82,10 @@ export function parseHeartTraceSession(serialized: string): TestState | null {
       || tiedTypes.length !== state.tiedTypes.length
       || new Set(tiedTypes).size !== tiedTypes.length
       || (state.phase === 'tie-breaker' && tiedTypes.length < 2)
+      || (state.phase === 'result' && (
+        !validResultTypes.has(state.result as ResultTypeId)
+        || Object.keys(answers).length !== QUESTIONS.length
+      ))
     ) {
       return null;
     }
@@ -89,7 +94,7 @@ export function parseHeartTraceSession(serialized: string): TestState | null {
       phase: state.phase,
       currentQuestionIndex: state.currentQuestionIndex,
       answers,
-      result: null,
+      result: state.phase === 'result' ? state.result : null,
       tiedTypes,
     };
   } catch {
@@ -102,8 +107,8 @@ export function loadHeartTraceSession(): TestState | null {
     return null;
   }
 
-  const serialized = window.localStorage.getItem(HEART_TRACE_SESSION_KEY);
-  return serialized ? parseHeartTraceSession(serialized) : null;
+  const stored = readStoredValue(HEART_TRACE_SESSION_KEY);
+  return stored ? parseHeartTraceSession(JSON.stringify(stored)) : null;
 }
 
 export function saveHeartTraceSession(state: TestState): void {
@@ -112,11 +117,11 @@ export function saveHeartTraceSession(state: TestState): void {
   }
 
   const session: StoredHeartTraceSession = { version: 1, state };
-  window.localStorage.setItem(HEART_TRACE_SESSION_KEY, JSON.stringify(session));
+  writeStoredValue(HEART_TRACE_SESSION_KEY, session);
 }
 
 export function clearHeartTraceSession(): void {
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(HEART_TRACE_SESSION_KEY);
+    writeStoredValue(HEART_TRACE_SESSION_KEY, null);
   }
 }

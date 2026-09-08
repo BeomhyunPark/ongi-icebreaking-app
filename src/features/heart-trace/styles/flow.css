@@ -710,3 +710,14 @@
   letter-spacing: -0.0125rem;
   line-height: 1.25rem;
 }
+.intro-more-button {
+  display: block;
+  min-height: 2.75rem;
+  margin: 0.25rem auto 0;
+  padding: 0.5rem 1rem;
+  border: 0;
+  background: transparent;
+  color: #c8d8eb;
+  cursor: pointer;
+  font-size: 0.875rem;
+}

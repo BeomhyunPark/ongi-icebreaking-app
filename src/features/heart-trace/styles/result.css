@@ -618,3 +618,30 @@
   font-weight: 700;
   text-decoration: none;
 }
+.result-quick-actions {
+  display: grid;
+  gap: 0.25rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.result-quick-actions .result-save-button { margin-top: 0; }
+
+.result-image-download {
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--result-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  font-size: 0.875rem;
+}
+
+.result-image-download:disabled { opacity: 0.5; cursor: default; }
+
+.result-conversation {
+  margin: 1.5rem 0;
+  color: var(--result-text);
+}
+
+.result-conversation summary { padding: 0.75rem 0; cursor: pointer; }

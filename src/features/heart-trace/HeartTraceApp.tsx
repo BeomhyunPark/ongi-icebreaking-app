@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useReducer, useState } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 
 import { QUESTIONS } from './data/questions';
 import { RESULT_TYPES } from './data/resultTypes';
@@ -8,7 +8,6 @@ import {
 } from './domain/answers';
 import { createTieBreakerQuestion } from './domain/tieBreaker';
 import type { ResultTypeId } from './domain/types';
-import { GuideScreen } from './screens/GuideScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { LoadingScreen } from './screens/LoadingScreen';
 import { QuestionScreen } from './screens/QuestionScreen';
@@ -35,22 +34,25 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
   const [state, dispatch] = useReducer(
     testReducer,
     undefined,
-    createInitialTestState,
+    () => {
+      const saved = loadHeartTraceSession();
+      return saved?.phase === 'result' ? saved : createInitialTestState();
+    },
   );
-  const [introStep, setIntroStep] = useState<'intro' | 'guide'>('intro');
-  const [revealedResult, setRevealedResult] = useState<ResultTypeId | null>(null);
+  const restoredResult = useRef(state.phase === 'result' ? state.result : null);
+  const [revealedResult, setRevealedResult] = useState<ResultTypeId | null>(restoredResult.current);
   const [savedSession, setSavedSession] = useState(() => loadHeartTraceSession());
 
   useLayoutEffect(() => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-  }, [introStep, revealedResult, state.currentQuestionIndex, state.phase]);
+  }, [revealedResult, state.currentQuestionIndex, state.phase]);
 
   const handleRestart = () => {
     clearHeartTraceSession();
     setSavedSession(null);
-    setIntroStep('intro');
     setRevealedResult(null);
+    restoredResult.current = null;
     dispatch({ type: 'RESTART' });
   };
 
@@ -71,15 +73,10 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
   };
 
   useEffect(() => {
-    if (state.phase === 'question' || state.phase === 'tie-breaker') {
+    if (state.phase === 'question' || state.phase === 'tie-breaker' || state.phase === 'result') {
       saveHeartTraceSession(state);
       setSavedSession(state);
       return;
-    }
-
-    if (state.phase === 'result') {
-      clearHeartTraceSession();
-      setSavedSession(null);
     }
   }, [state]);
 
@@ -90,6 +87,7 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
     }
 
     const result = state.result;
+    if (restoredResult.current === result) return;
     const timer = window.setTimeout(() => {
       setRevealedResult(result);
     }, RESULT_REVEAL_DELAY_MS);
@@ -103,7 +101,9 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
     }
 
     const result = RESULT_TYPES[state.result];
-    void completeContentParticipation('heart-trace', result.id);
+    if (restoredResult.current !== result.id) {
+      void completeContentParticipation('heart-trace', result.id);
+    }
 
     void preloadResultImage(
       result.resultCardSrc,
@@ -114,18 +114,9 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
   }, [state.result]);
 
   if (state.phase === 'intro') {
-    if (introStep === 'guide') {
-      return (
-        <GuideScreen
-          onStart={handleStart}
-          onBackHome={onBackHome}
-        />
-      );
-    }
-
     return (
       <IntroScreen
-        onContinue={() => setIntroStep('guide')}
+        onStart={handleStart}
         onBackHome={onBackHome}
         savedAnswerCount={savedSession ? Object.keys(savedSession.answers).length : 0}
         savedQuestionNumber={savedSession ? savedSession.currentQuestionIndex + 1 : null}
@@ -203,7 +194,7 @@ export function HeartTraceApp({ onBackHome }: HeartTraceAppProps) {
 
   return (
     <IntroScreen
-      onContinue={() => setIntroStep('guide')}
+      onStart={handleStart}
       onBackHome={onBackHome}
       savedAnswerCount={savedSession ? Object.keys(savedSession.answers).length : 0}
       savedQuestionNumber={savedSession ? savedSession.currentQuestionIndex + 1 : null}

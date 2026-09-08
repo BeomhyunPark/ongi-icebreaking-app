@@ -153,3 +153,16 @@ export async function saveResultImageFile(
   downloadResultFile(file);
   return 'downloaded';
 }
+
+export async function shareResultImageFile(file: File, imageSrc: string): Promise<ResultImageAction> {
+  if (canShareResultFile(file)) {
+    try {
+      await navigator.share({ files: [file] });
+      return 'shared';
+    } catch (error) {
+      if (isShareCancellation(error)) return 'cancelled';
+      throw error;
+    }
+  }
+  return saveResultImageFile(file, imageSrc);
+}

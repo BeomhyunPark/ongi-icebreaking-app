@@ -88,6 +88,14 @@ export function ResultScreen({ resultId, onRestart, onBackHome }: ResultScreenPr
           <p className="result-hero__descriptor">{result.descriptor}</p>
         </header>
 
+        <div className="result-quick-actions">
+          <button className="result-save-button" type="button" disabled={isSaving || (!resultFile && !imageLoadFailed)}
+            onClick={() => void saveResultImage('share')}>{isSaving ? '준비 중…' : !resultFile && !imageLoadFailed ? '이미지 준비 중…' : '내 결과 공유'}</button>
+          <button className="result-image-download" type="button" disabled={isSaving || (!resultFile && !imageLoadFailed)}
+            onClick={() => void saveResultImage()}>{imageLoadFailed ? '이미지 다시 불러오기' : '결과 이미지 저장하기'}</button>
+          <p className="result-save-notice" aria-live="polite">{saveMessage}</p>
+        </div>
+
         <section className="result-intro" aria-label={`${result.name} 소개`}>
           {result.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </section>
@@ -124,21 +132,10 @@ export function ResultScreen({ resultId, onRestart, onBackHome }: ResultScreenPr
           </article>
         </section>
 
-        <button
-          className="result-save-button"
-          type="button"
-          disabled={(resultFile === null && !imageLoadFailed) || isSaving}
-          onClick={saveResultImage}
-        >
-          {isSaving
-            ? '저장 준비 중…'
-            : imageLoadFailed
-              ? '이미지 다시 불러오기'
-              : resultFile === null
-                ? '이미지 준비 중…'
-                : '결과 이미지 저장하기'}
-        </button>
-        <p className="result-save-notice" aria-live="polite">{saveMessage}</p>
+        <details className="result-conversation">
+          <summary>함께 이야기하기</summary>
+          <p>{result.name}의 모습 중 나와 가장 닮은 부분은 무엇인가요?</p>
+        </details>
 
         <div className="result-navigation">
           <button className="result-restart-button" type="button" onClick={onRestart}>처음부터 다시 하기</button>

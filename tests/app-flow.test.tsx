@@ -17,7 +17,7 @@ import {
 import { LoadingScreen } from '../src/features/heart-trace/screens/LoadingScreen';
 import { RESULT_REVEAL_DELAY_MS } from '../src/features/heart-trace/state/timing';
 
-const INTRO_START_BUTTON_NAME = '나와 닮은 흔적이를 찾아볼까요?';
+const INTRO_START_BUTTON_NAME = '바로 시작하기';
 const HEART_TRACE_CARD_NAME = /마음속 흔적 찾기/;
 
 afterEach(() => {
@@ -31,9 +31,7 @@ afterEach(() => {
 });
 
 function startQuestionFlow() {
-  revealIntroStartButton();
   fireEvent.click(screen.getByRole('button', { name: INTRO_START_BUTTON_NAME }));
-  fireEvent.click(screen.getByRole('button', { name: '알겠어요' }));
 }
 
 async function renderHeartTraceApp() {
@@ -238,7 +236,7 @@ describe('앱 화면 흐름과 접근성', () => {
     expect(await getAccessibilityViolations(container)).toEqual([]);
   });
 
-  it('키보드만으로 시작 화면과 안내 화면을 통과할 수 있다', async () => {
+  it('키보드만으로 바로 시작하고 질문에 답할 수 있다', async () => {
     const user = userEvent.setup();
     await renderHeartTraceApp();
 
@@ -250,12 +248,6 @@ describe('앱 화면 흐름과 접근성', () => {
     await user.tab();
     expect(document.activeElement?.textContent).toContain(INTRO_START_BUTTON_NAME);
     await user.keyboard('{Enter}');
-
-    await user.tab();
-    expect(document.activeElement?.textContent).toContain('홈');
-    await user.tab();
-    expect(document.activeElement?.textContent).toContain('알겠어요');
-    await user.keyboard(' ');
 
     expect(screen.getByRole('group', { name: /Q1/ })).toBeTruthy();
     expect(screen.getAllByRole('radio')).toHaveLength(5);
@@ -269,10 +261,10 @@ describe('앱 화면 흐름과 접근성', () => {
     expect(screen.getByText('Q2')).toBeTruthy();
   });
 
-  it('흔적이 소개를 마지막까지 넘긴 뒤에만 시작 버튼을 보여준다', async () => {
+  it('소개를 읽지 않아도 시작 버튼을 보여주고 소개는 선택해서 읽는다', async () => {
     await renderHeartTraceApp();
 
-    expect(screen.queryByRole('button', { name: INTRO_START_BUTTON_NAME })).toBeNull();
+    expect(screen.getByRole('button', { name: INTRO_START_BUTTON_NAME })).toBeTruthy();
 
     const messageTrack = screen.getByRole('region', { name: '흔적이 소개 글' });
 
@@ -283,7 +275,7 @@ describe('앱 화면 흐름과 접근성', () => {
     });
     fireEvent.scroll(messageTrack);
 
-    expect(screen.queryByRole('button', { name: INTRO_START_BUTTON_NAME })).toBeNull();
+    expect(screen.getByRole('button', { name: INTRO_START_BUTTON_NAME })).toBeTruthy();
 
     Object.defineProperty(messageTrack, 'scrollLeft', {
       configurable: true,
@@ -297,7 +289,7 @@ describe('앱 화면 흐름과 접근성', () => {
   it('하단 버튼만으로 소개를 넘기고 시작 버튼까지 도달할 수 있다', async () => {
     await renderHeartTraceApp();
 
-    const nextButtonName = '다음';
+    const nextButtonName = '소개 더 읽기';
 
     fireEvent.click(screen.getByRole('button', { name: nextButtonName }));
 
@@ -314,12 +306,6 @@ describe('앱 화면 흐름과 접근성', () => {
     document.body.scrollTop = 320;
     revealIntroStartButton();
     fireEvent.click(screen.getByRole('button', { name: INTRO_START_BUTTON_NAME }));
-    expect(document.documentElement.scrollTop).toBe(0);
-    expect(document.body.scrollTop).toBe(0);
-
-    document.documentElement.scrollTop = 320;
-    document.body.scrollTop = 320;
-    fireEvent.click(screen.getByRole('button', { name: '알겠어요' }));
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
 

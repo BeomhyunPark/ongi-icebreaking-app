@@ -5,6 +5,7 @@ import {
   getResultImageFilename,
   loadResultImageFile,
   saveResultImageFile,
+  shareResultImageFile,
   type ResultImageAction,
 } from '../services/resultImage';
 import { recordShareClick } from '../../../engagement/tracker';
@@ -66,7 +67,7 @@ export function useResultImage({ resultId, imageSrc }: UseResultImageOptions) {
     }
   };
 
-  const saveResultImage = async () => {
+  const saveResultImage = async (mode: 'save' | 'share' = 'save') => {
     if (isSaving) {
       return;
     }
@@ -83,7 +84,7 @@ export function useResultImage({ resultId, imageSrc }: UseResultImageOptions) {
       setResultFile(file);
       setImageLoadFailed(false);
 
-      const action = await saveResultImageFile(file, imageSrc);
+      const action = await (mode === 'share' ? shareResultImageFile : saveResultImageFile)(file, imageSrc);
       handleImageAction(action);
     } catch {
       setImageLoadFailed(true);
