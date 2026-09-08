@@ -1,21 +1,37 @@
 import { ACTIVITIES, type ActivityId } from './activityCatalog';
 import { isPickerMode } from '../features/group-picker/domain/modeCatalog';
 import type { PickerMode } from '../features/group-picker/domain/types';
-import {
-  isBalanceGameWeight,
-  type BalanceGameWeight,
-} from '../features/balance-game/domain/types';
+import { isBalanceGameWeight, type BalanceGameWeight } from '../features/balance-game/domain/types';
 import {
   isWorldCupCategoryId,
   type WorldCupCategoryId,
 } from '../features/ideal-world-cup/domain/types';
 
-export type ActivityTarget = {
-  id: ActivityId;
-  initialGroupPickerMode?: PickerMode;
-  initialWorldCupCategory?: WorldCupCategoryId;
-  initialBalanceGameWeight?: BalanceGameWeight;
-};
+export type ActivityTarget =
+  | {
+      id: 'group-picker';
+      initialGroupPickerMode?: PickerMode;
+      initialWorldCupCategory?: never;
+      initialBalanceGameWeight?: never;
+    }
+  | {
+      id: 'ideal-world-cup';
+      initialWorldCupCategory?: WorldCupCategoryId;
+      initialGroupPickerMode?: never;
+      initialBalanceGameWeight?: never;
+    }
+  | {
+      id: 'balance-game';
+      initialBalanceGameWeight?: BalanceGameWeight;
+      initialGroupPickerMode?: never;
+      initialWorldCupCategory?: never;
+    }
+  | {
+      id: 'heart-trace' | 'gureumi' | 'anonymous-sharing';
+      initialGroupPickerMode?: never;
+      initialWorldCupCategory?: never;
+      initialBalanceGameWeight?: never;
+    };
 
 export type AppPage = 'updates' | 'gureumi-beta-stats';
 
@@ -65,10 +81,7 @@ export function parsePageSearch(search: string): AppPage | null {
   return page === 'updates' || page === 'gureumi-beta-stats' ? page : null;
 }
 
-export function buildActivityUrl(
-  currentUrl: string,
-  target: ActivityTarget | null,
-): string {
+export function buildActivityUrl(currentUrl: string, target: ActivityTarget | null): string {
   const url = new URL(currentUrl);
 
   url.searchParams.delete('activity');

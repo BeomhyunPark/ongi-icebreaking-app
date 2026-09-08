@@ -1,3 +1,4 @@
+import { ActivityRenderer } from './ActivityRenderer';
 import {
   lazy,
   Suspense,
@@ -23,7 +24,7 @@ import {
   type ActivityTarget,
 } from './activityNavigation';
 import { SplashScreen } from './SplashScreen';
-import { getActivityDefinition, preloadActivity } from './activityRegistry';
+import { preloadActivity } from './activityRegistry';
 import { ActivityShareButton } from '../components/ActivityShareButton';
 import { UpdatesScreen } from '../features/updates/UpdatesScreen';
 import { getEngagementContentCode } from '../engagement/contentCodes';
@@ -35,42 +36,40 @@ const GureumiStatisticsApp = lazy(async () => {
 });
 
 function getDocumentScrollTop(): number {
-  return Math.max(
-    window.scrollY,
-    document.documentElement.scrollTop,
-    document.body.scrollTop,
-  );
+  return Math.max(window.scrollY, document.documentElement.scrollTop, document.body.scrollTop);
 }
 
 function updateActivityUrl(target: ActivityTarget | null, action: 'push' | 'replace'): void {
   const nextUrl = buildActivityUrl(window.location.href, target);
-  const updateHistory = action === 'push'
-    ? window.history.pushState.bind(window.history)
-    : window.history.replaceState.bind(window.history);
+  const updateHistory =
+    action === 'push'
+      ? window.history.pushState.bind(window.history)
+      : window.history.replaceState.bind(window.history);
 
   updateHistory(window.history.state, '', nextUrl);
 }
 
 function updatePageUrl(page: AppPage | null, action: 'push' | 'replace'): void {
   const nextUrl = buildPageUrl(window.location.href, page);
-  const updateHistory = action === 'push'
-    ? window.history.pushState.bind(window.history)
-    : window.history.replaceState.bind(window.history);
+  const updateHistory =
+    action === 'push'
+      ? window.history.pushState.bind(window.history)
+      : window.history.replaceState.bind(window.history);
 
   updateHistory(window.history.state, '', nextUrl);
 }
 
 export function App() {
   const [showSplash, setShowSplash] = useState(import.meta.env.MODE !== 'test');
-  const [activeActivity, setActiveActivity] = useState<ActivityTarget | null>(() => (
-    parseActivitySearch(window.location.search)
-  ));
-  const [activePage, setActivePage] = useState<AppPage | null>(() => (
-    parsePageSearch(window.location.search)
-  ));
-  const [featuredActivityId] = useState<ActivityId | null>(() => (
-    pickFeaturedActivity(ACTIVITIES, null)?.id ?? null
-  ));
+  const [activeActivity, setActiveActivity] = useState<ActivityTarget | null>(() =>
+    parseActivitySearch(window.location.search),
+  );
+  const [activePage, setActivePage] = useState<AppPage | null>(() =>
+    parsePageSearch(window.location.search),
+  );
+  const [featuredActivityId] = useState<ActivityId | null>(
+    () => pickFeaturedActivity(ACTIVITIES, null)?.id ?? null,
+  );
   const activeActivityRef = useRef(activeActivity);
   const homeScrollTop = useRef(0);
   const trackedLocation = useRef<string | null>(null);
@@ -156,11 +155,11 @@ export function App() {
 
     updateActivityUrl(nextActivity, 'replace');
     activeActivityRef.current = nextActivity;
-    setActiveActivity((current) => (
+    setActiveActivity((current) =>
       current?.id !== 'group-picker' || current.initialGroupPickerMode === mode
         ? current
-        : nextActivity
-    ));
+        : nextActivity,
+    );
   }, []);
 
   const handleWorldCupCategoryChange = useCallback((category: WorldCupCategoryId) => {
@@ -175,11 +174,11 @@ export function App() {
 
     updateActivityUrl(nextActivity, 'replace');
     activeActivityRef.current = nextActivity;
-    setActiveActivity((current) => (
+    setActiveActivity((current) =>
       current?.id !== 'ideal-world-cup' || current.initialWorldCupCategory === category
         ? current
-        : nextActivity
-    ));
+        : nextActivity,
+    );
   }, []);
 
   const handleBalanceGameWeightChange = useCallback((weight: BalanceGameWeight) => {
@@ -194,11 +193,11 @@ export function App() {
 
     updateActivityUrl(nextActivity, 'replace');
     activeActivityRef.current = nextActivity;
-    setActiveActivity((current) => (
+    setActiveActivity((current) =>
       current?.id !== 'balance-game' || current.initialBalanceGameWeight === weight
         ? current
-        : nextActivity
-    ));
+        : nextActivity,
+    );
   }, []);
 
   if (showSplash) {
@@ -206,11 +205,14 @@ export function App() {
   }
 
   const selectActivity = (id: ActivityId, initialGroupPickerMode?: PickerMode) => {
-    const target: ActivityTarget = id === 'ideal-world-cup'
-      ? { id, initialWorldCupCategory: 'meal' }
-      : id === 'balance-game'
-        ? { id, initialBalanceGameWeight: 'light' }
-        : { id, initialGroupPickerMode };
+    const target: ActivityTarget =
+      id === 'ideal-world-cup'
+        ? { id, initialWorldCupCategory: 'meal' }
+        : id === 'balance-game'
+          ? { id, initialBalanceGameWeight: 'light' }
+          : id === 'group-picker'
+            ? { id, initialGroupPickerMode }
+            : { id };
 
     homeScrollTop.current = getDocumentScrollTop();
     updateActivityUrl(target, 'push');
@@ -238,34 +240,22 @@ export function App() {
     setActivePage(null);
   };
 
-  const activity = activeActivity === null
-    ? null
-    : getActivityDefinition(activeActivity.id);
-  const ActivityApp = activity?.Component;
-
   return (
     <Suspense fallback={<SplashScreen />}>
       {activePage === 'updates' ? (
         <UpdatesScreen onBackHome={returnHome} />
       ) : activePage === 'gureumi-beta-stats' ? (
         <GureumiStatisticsApp onBackHome={returnHome} />
-      ) : ActivityApp && activeActivity ? (
+      ) : activeActivity ? (
         <div className="activity-shell">
-          <ActivityApp
-            initialGroupPickerMode={activeActivity.initialGroupPickerMode}
-            initialWorldCupCategory={activeActivity.initialWorldCupCategory}
-            initialBalanceGameWeight={activeActivity.initialBalanceGameWeight}
+          <ActivityRenderer
+            target={activeActivity}
             onBackHome={returnHome}
-            onSelectActivity={selectActivity}
             onGroupPickerModeChange={handleGroupPickerModeChange}
             onWorldCupCategoryChange={handleWorldCupCategoryChange}
             onBalanceGameWeightChange={handleBalanceGameWeightChange}
           />
-          {activeActivity.id !== 'gureumi' ? (
-            <ActivityShareButton
-              target={activeActivity}
-            />
-          ) : null}
+          {activeActivity.id !== 'gureumi' ? <ActivityShareButton target={activeActivity} /> : null}
         </div>
       ) : (
         <HomeScreen

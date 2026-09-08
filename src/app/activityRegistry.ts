@@ -1,26 +1,6 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
+import { lazy } from 'react';
 
-import type { PickerMode } from '../features/group-picker/domain/types';
-import type { WorldCupCategoryId } from '../features/ideal-world-cup/domain/types';
 import type { ActivityId } from './activityCatalog';
-import type { BalanceGameWeight } from '../features/balance-game/domain/types';
-
-export type ActivityAppProps = {
-  onBackHome: () => void;
-  onSelectActivity?: (activityId: ActivityId) => void;
-  initialGroupPickerMode?: PickerMode;
-  onGroupPickerModeChange?: (mode: PickerMode) => void;
-  initialWorldCupCategory?: WorldCupCategoryId;
-  onWorldCupCategoryChange?: (category: WorldCupCategoryId) => void;
-  initialBalanceGameWeight?: BalanceGameWeight;
-  onBalanceGameWeightChange?: (weight: BalanceGameWeight) => void;
-};
-
-export type ActivityDefinition = {
-  id: ActivityId;
-  Component: LazyExoticComponent<ComponentType<ActivityAppProps>>;
-  preload: () => Promise<unknown>;
-};
 
 const loadHeartTraceApp = async () => {
   const module = await import('../features/heart-trace/HeartTraceApp');
@@ -59,7 +39,7 @@ const loadGureumiApp = async () => {
 };
 const GureumiApp = lazy(loadGureumiApp);
 
-const ACTIVITY_REGISTRY: Partial<Record<ActivityId, ActivityDefinition>> = {
+const ACTIVITY_REGISTRY = {
   'heart-trace': {
     id: 'heart-trace',
     Component: HeartTraceApp,
@@ -85,17 +65,15 @@ const ACTIVITY_REGISTRY: Partial<Record<ActivityId, ActivityDefinition>> = {
     Component: AnonymousSharingApp,
     preload: loadAnonymousSharingApp,
   },
-  'gureumi': {
+  gureumi: {
     id: 'gureumi',
     Component: GureumiApp,
     preload: loadGureumiApp,
   },
-};
+} as const;
 
-export function getActivityDefinition(
-  activityId: ActivityId,
-): ActivityDefinition | null {
-  return ACTIVITY_REGISTRY[activityId] ?? null;
+export function getActivityDefinition<Id extends ActivityId>(activityId: Id) {
+  return ACTIVITY_REGISTRY[activityId];
 }
 
 export function preloadActivity(activityId: ActivityId): Promise<void> {
