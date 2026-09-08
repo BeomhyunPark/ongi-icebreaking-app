@@ -10,6 +10,7 @@ import type {
   BalanceGameWeight,
 } from './domain/types';
 import './styles/balance-game.css';
+import { loadBalanceSession, saveBalanceSession } from './sessionStorage';
 import {
   completeContentParticipation,
   startContentParticipation,
@@ -58,14 +59,28 @@ export function BalanceGameApp({
   initialBalanceGameWeight = 'light',
   onBalanceGameWeightChange,
 }: BalanceGameAppProps) {
-  const [phase, setPhase] = useState<Phase>('setup');
+  const [savedSession] = useState(() => loadBalanceSession(initialBalanceGameWeight));
+  const [phase, setPhase] = useState<Phase>(savedSession?.phase ?? 'setup');
   const [weight, setWeight] = useState<BalanceGameWeight>(initialBalanceGameWeight);
   const [filter, setFilter] = useState<QuestionFilter>('all');
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<readonly string[]>([]);
-  const [playedQuestionIds, setPlayedQuestionIds] = useState<readonly string[]>([]);
-  const [playQuestions, setPlayQuestions] = useState<readonly BalanceGameQuestion[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedSide, setSelectedSide] = useState<'left' | 'right' | null>(null);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<readonly string[]>(savedSession?.selectedQuestionIds ?? []);
+  const [playedQuestionIds, setPlayedQuestionIds] = useState<readonly string[]>(savedSession?.playedQuestionIds ?? []);
+  const [playQuestions, setPlayQuestions] = useState<readonly BalanceGameQuestion[]>(() => (
+    savedSession?.questionIds.map(id => BALANCE_GAME_QUESTIONS.find(q => q.id === id)!) ?? []
+  ));
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedSession?.index ?? 0);
+  const [choices, setChoices] = useState<Record<string, 'left' | 'right'>>(savedSession?.choices ?? {});
+  const selectedSide = choices[playQuestions[currentQuestionIndex]?.id] ?? null;
+  const setSelectedSide = (side: 'left' | 'right') => {
+    setChoices(current => ({ ...current, [playQuestions[currentQuestionIndex].id]: side }));
+  };
+
+  useEffect(() => {
+    saveBalanceSession(weight, {
+      phase, selectedQuestionIds, playedQuestionIds,
+      questionIds: playQuestions.map(q => q.id), index: currentQuestionIndex, choices,
+    });
+  }, [weight, phase, selectedQuestionIds, playedQuestionIds, playQuestions, currentQuestionIndex, choices]);
 
   const visibleQuestions = useMemo<readonly BalanceGameQuestion[]>(
     () => BALANCE_GAME_QUESTIONS.filter(
@@ -87,7 +102,7 @@ export function BalanceGameApp({
     void startContentParticipation('balance-game');
     setPlayQuestions(questions);
     setCurrentQuestionIndex(0);
-    setSelectedSide(null);
+    setChoices({});
     setPhase('play');
   };
 
@@ -110,7 +125,6 @@ export function BalanceGameApp({
   };
 
   const showPicker = () => {
-    setSelectedSide(null);
     setPhase('picker');
   };
 
@@ -118,6 +132,10 @@ export function BalanceGameApp({
     setWeight(nextWeight);
     setFilter('all');
     setSelectedQuestionIds([]);
+    setPlayedQuestionIds([]);
+    setPlayQuestions([]);
+    setCurrentQuestionIndex(0);
+    setChoices({});
   };
 
   const completeGame = () => {
@@ -266,6 +284,7 @@ export function BalanceGameApp({
         <p>같은 답보다 왜 골랐는지를 나눌 때<br />우리 사이가 조금 더 가까워져요.</p>
         <div className="balance-complete__actions">
           <PrimaryButton onClick={showPicker}>다른 질문 골라보기</PrimaryButton>
+          <button type="button" onClick={() => { setCurrentQuestionIndex(0); setPhase('play'); }}>내 선택 다시 보기</button>
           <button type="button" onClick={onBackHome}>홈으로</button>
         </div>
       </ScreenLayout>
@@ -303,6 +322,8 @@ export function BalanceGameApp({
       </div>
 
       <footer className="balance-play__footer">
+        <button className="balance-play__previous" type="button" disabled={currentQuestionIndex === 0}
+          onClick={() => setCurrentQuestionIndex(index => index - 1)}>이전 질문</button>
         <PrimaryButton
           className="balance-play__next"
           disabled={selectedSide === null}
@@ -313,7 +334,6 @@ export function BalanceGameApp({
             }
 
             setCurrentQuestionIndex((index) => index + 1);
-            setSelectedSide(null);
           }}
         >
           {isLastQuestion ? '마무리하기' : '다음 질문'}

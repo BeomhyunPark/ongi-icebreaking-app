@@ -667,10 +667,25 @@
 }
 
 .balance-play__footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
   flex: 0 0 auto;
   margin-top: auto;
   padding-top: 1rem;
 }
+
+.balance-play__previous {
+  min-height: 3.5rem;
+  padding: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 1rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.balance-play__previous:disabled { opacity: 0.4; cursor: default; }
 
 .balance-complete .screen-layout__content {
   display: flex;

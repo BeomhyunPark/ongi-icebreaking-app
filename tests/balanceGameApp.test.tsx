@@ -8,9 +8,36 @@ import {
   pickRandomQuestions,
 } from '../src/features/balance-game/BalanceGameApp';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.localStorage.clear(); });
 
 describe('밸런스 게임 기능 진입점', () => {
+  it('다시 열어도 같은 질문 순서와 선택을 복원하고 이전 질문을 수정할 수 있다', () => {
+    const first = render(<BalanceGameApp onBackHome={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: '랜덤으로 시작' }));
+    const firstQuestion = screen.getByRole('heading', { level: 1 }).textContent;
+    const firstAnswer = screen.getAllByRole('radio')[0].getAttribute('aria-label');
+    fireEvent.click(screen.getAllByRole('radio')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '다음 질문' }));
+    const secondQuestion = screen.getByRole('heading', { level: 1 }).textContent;
+    first.unmount();
+
+    render(<BalanceGameApp onBackHome={vi.fn()} />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(secondQuestion);
+    fireEvent.click(screen.getByRole('button', { name: '이전 질문' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(firstQuestion);
+    expect(screen.getByRole('radio', { name: firstAnswer! }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getAllByRole('radio')[1]);
+    fireEvent.click(screen.getByRole('button', { name: '다음 질문' }));
+    fireEvent.click(screen.getByRole('button', { name: '이전 질문' }));
+    expect(screen.getAllByRole('radio')[1].getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('손상된 저장 정보가 있어도 새 게임을 시작할 수 있다', () => {
+    window.localStorage.setItem('ongi.balance-game.session.v1.light', JSON.stringify({ phase: 'play', questionIds: ['removed'] }));
+    render(<BalanceGameApp onBackHome={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '랜덤으로 시작' })).toBeTruthy();
+  });
+
   it('대화 온도와 질문 선택 방법을 고르고 홈으로 돌아갈 수 있다', () => {
     const onBackHome = vi.fn();
 
