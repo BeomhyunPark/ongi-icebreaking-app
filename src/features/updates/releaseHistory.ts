@@ -15,11 +15,27 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.3.2',
+    date: '2026.09.09',
+    title: '끊겨도 다시 이어지도록',
+    summary: '모임 재연결과 테스트 이어하기를 더 안정적으로 다듬었어요.',
+    current: true,
+    changes: [
+      {
+        title: '모임 재연결',
+        description: '연결이 돌아오면 놓친 이야기와 공개 상태를 다시 불러와요.',
+      },
+      {
+        title: '진행 상태 보호',
+        description: '구르미의 중복 시작을 막고, 새 검사 시작이 실패해도 기존 기록을 유지해요.',
+      },
+    ],
+  },
+  {
     version: 'v2.3.1',
     date: '2026.09.09',
     title: '같은 온기, 더 단단하게',
     summary: '화면과 사용법은 그대로, 진행과 저장 흐름을 정리했어요.',
-    current: true,
     changes: [
       {
         title: '진행 상태 보호',
