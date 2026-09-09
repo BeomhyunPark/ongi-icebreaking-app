@@ -15,11 +15,27 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.3.1',
+    date: '2026.09.09',
+    title: '같은 온기, 더 단단하게',
+    summary: '화면과 사용법은 그대로, 진행과 저장 흐름을 정리했어요.',
+    current: true,
+    changes: [
+      {
+        title: '진행 상태 보호',
+        description: '익명 나눔에서 늦게 도착한 응답이 나간 모임을 다시 열거나 최신 상태를 덮어쓰지 않도록 했어요.',
+      },
+      {
+        title: '기존 결과는 그대로',
+        description: '저장된 질문과 결과를 유지하면서 활동별 진행·저장·공유 처리를 정리했어요.',
+      },
+    ],
+  },
+  {
     version: 'v2.3.0',
     date: '2026.09.08',
     title: '바로 시작하고, 다시 이어서',
     summary: '진행과 결과를 다시 열 수 있고, 원하는 기능을 더 빨리 찾을 수 있어요.',
-    current: true,
     changes: [
       {
         title: '진행과 결과 복구',
