@@ -4,6 +4,7 @@ import { ACTIVITIES, type Activity, type ActivityId } from '../../app/activityCa
 import { BrandMark } from '../../components/BrandMark';
 import { ScreenLayout } from '../../components/ScreenLayout';
 import { HOME_TOOL_SHORTCUTS } from '../../app/homeNavigation';
+import { HOME_INTENTS, selectHomeSections, type HomeIntent } from '../../app/homeSections';
 import type { ActivityTarget } from '../../app/activityNavigation';
 import { assetUrl } from '../../utils/assetUrl';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
@@ -59,18 +60,14 @@ export function HomeScreen({
   onSelectActivity,
 }: HomeScreenProps) {
   const [visitorCount, setVisitorCount] = useState<number | null>(getCachedVisitorCount);
-  const [intent, setIntent] = useState<'all' | 'test' | 'play' | 'tools'>('all');
+  const [intent, setIntent] = useState<HomeIntent>('all');
   const featuredActivity = ACTIVITIES.find(({ id }) => id === featuredActivityId) ?? null;
-  const communityTools = ACTIVITIES.filter(
-    (activity) => activity.available && activity.group === 'community-tool',
-  );
-  const otherPlayActivities = ACTIVITIES.filter(
-    (activity) =>
-      activity.group === 'play' &&
-      activity.id !== featuredActivity?.id &&
-      (intent !== 'test' || activity.id === 'heart-trace') &&
-      (intent !== 'play' || activity.id !== 'heart-trace'),
-  );
+  const {
+    tools: communityTools,
+    others: otherPlayActivities,
+    previews,
+    showFeatured,
+  } = selectHomeSections(ACTIVITIES, featuredActivity, intent);
 
   useEffect(() => {
     let active = true;
@@ -123,21 +120,14 @@ export function HomeScreen({
       </header>
 
       <nav className="home-intents" aria-label="콘텐츠 고르기">
-        {(
-          [
-            ['all', '전체'],
-            ['test', '혼자 테스트'],
-            ['play', '함께 놀기'],
-            ['tools', '모임 도구'],
-          ] as const
-        ).map(([id, label]) => (
+        {HOME_INTENTS.map(([id, label]) => (
           <button type="button" key={id} aria-pressed={intent === id} onClick={() => setIntent(id)}>
             {label}
           </button>
         ))}
       </nav>
 
-      {intent === 'all' || intent === 'tools' ? (
+      {communityTools.length > 0 ? (
         <section
           className="home-section home-section--community-tools"
           aria-labelledby="community-tools-title"
@@ -208,7 +198,7 @@ export function HomeScreen({
         </section>
       ) : null}
 
-      {intent === 'all' || intent === 'play' ? (
+      {showFeatured ? (
         <section className="home-section" aria-labelledby="featured-title">
           <div className="home-section__meta">
             <p>지금 바로 해봐요</p>
@@ -237,7 +227,7 @@ export function HomeScreen({
         </section>
       ) : null}
 
-      {intent !== 'tools' ? (
+      {otherPlayActivities.length > 0 ? (
         <section className="home-section home-section--upcoming" aria-labelledby="more-title">
           <div className="home-section__meta">
             <p>취향대로 골라봐요</p>
@@ -293,7 +283,7 @@ export function HomeScreen({
         </section>
       ) : null}
 
-      {intent === 'all' || intent === 'test' ? (
+      {previews.length > 0 ? (
         <section className="home-section home-section--preview" aria-labelledby="preview-title">
           <div className="home-section__meta">
             <p>먼저 경험해 주세요</p>

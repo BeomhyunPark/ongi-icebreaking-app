@@ -1,11 +1,25 @@
-export type ActivityId = 'heart-trace' | 'gureumi' | 'balance-game' | 'ideal-world-cup' | 'group-picker' | 'anonymous-sharing';
+export type ActivityId =
+  | 'heart-trace'
+  | 'gureumi'
+  | 'balance-game'
+  | 'ideal-world-cup'
+  | 'group-picker'
+  | 'anonymous-sharing';
 
-export type ActivityKind = '성격검사' | '새로운 테스트' | 'VS 놀이' | '토너먼트' | '모임 도구' | '소그룹 나눔';
+export type ActivityKind =
+  | '성격검사'
+  | '새로운 테스트'
+  | 'VS 놀이'
+  | '토너먼트'
+  | '모임 도구'
+  | '소그룹 나눔';
 export type ActivityGroup = 'play' | 'community-tool' | 'teaser';
+export type ActivityIntent = 'test' | 'play' | 'tools';
 
 export type Activity = {
   id: ActivityId;
   group: ActivityGroup;
+  intent: ActivityIntent;
   kind: ActivityKind;
   title: string;
   description: string;
@@ -17,6 +31,7 @@ export type Activity = {
 export const ACTIVITIES: readonly Activity[] = [
   {
     id: 'heart-trace',
+    intent: 'test',
     group: 'play',
     kind: '성격검사',
     title: '마음속 흔적 찾기',
@@ -26,6 +41,7 @@ export const ACTIVITIES: readonly Activity[] = [
   },
   {
     id: 'gureumi',
+    intent: 'test',
     group: 'teaser',
     kind: '새로운 테스트',
     title: '구르미 테스트',
@@ -36,6 +52,7 @@ export const ACTIVITIES: readonly Activity[] = [
   },
   {
     id: 'balance-game',
+    intent: 'play',
     group: 'play',
     kind: 'VS 놀이',
     title: '극과 극 밸런스 게임',
@@ -46,6 +63,7 @@ export const ACTIVITIES: readonly Activity[] = [
   },
   {
     id: 'ideal-world-cup',
+    intent: 'play',
     group: 'play',
     kind: '토너먼트',
     title: '최애 월드컵',
@@ -56,6 +74,7 @@ export const ACTIVITIES: readonly Activity[] = [
   },
   {
     id: 'group-picker',
+    intent: 'tools',
     group: 'community-tool',
     kind: '모임 도구',
     title: '오늘은 누구?',
@@ -66,6 +85,7 @@ export const ACTIVITIES: readonly Activity[] = [
   },
   {
     id: 'anonymous-sharing',
+    intent: 'tools',
     group: 'community-tool',
     kind: '소그룹 나눔',
     title: '익명으로 만나는 우리',
