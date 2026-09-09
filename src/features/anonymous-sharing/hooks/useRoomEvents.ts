@@ -22,19 +22,45 @@ export function useRoomEvents(roomId: string | null, onRoomEvent: () => void) {
       return undefined;
     }
 
-    const eventSource = new EventSource(roomEventsUrl(roomId), { withCredentials: true });
+    let eventSource: EventSource | null = null;
     const handleEvent = () => onRoomEvent();
-    const handleOpen = () => setReconnecting(false);
+    const handleOpen = () => {
+      setReconnecting(false);
+      // SSE has no replay: fetch changes missed while disconnected, including
+      // changes between the initial snapshot and the first subscription.
+      onRoomEvent();
+    };
     const handleError = () => setReconnecting(true);
-
-    eventSource.addEventListener('CONNECTED', handleOpen);
-    ROOM_EVENTS.forEach((eventName) => eventSource.addEventListener(eventName, handleEvent));
-    eventSource.onerror = handleError;
+    const disconnect = () => {
+      const source = eventSource;
+      if (!source) return;
+      ROOM_EVENTS.forEach((eventName) => source.removeEventListener(eventName, handleEvent));
+      source.removeEventListener('CONNECTED', handleOpen);
+      source.onerror = null;
+      source.close();
+      eventSource = null;
+    };
+    const connect = () => {
+      disconnect();
+      const source = new EventSource(roomEventsUrl(roomId), { withCredentials: true });
+      eventSource = source;
+      source.addEventListener('CONNECTED', handleOpen);
+      ROOM_EVENTS.forEach((eventName) => source.addEventListener(eventName, handleEvent));
+      source.onerror = handleError;
+    };
+    const handleOffline = () => {
+      disconnect();
+      setReconnecting(true);
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', connect);
+    if (navigator.onLine) connect();
+    else handleOffline();
 
     return () => {
-      ROOM_EVENTS.forEach((eventName) => eventSource.removeEventListener(eventName, handleEvent));
-      eventSource.removeEventListener('CONNECTED', handleOpen);
-      eventSource.close();
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', connect);
+      disconnect();
     };
   }, [onRoomEvent, roomId]);
 
