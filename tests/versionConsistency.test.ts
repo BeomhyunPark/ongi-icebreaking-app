@@ -30,6 +30,7 @@ describe('제품 버전 관리', () => {
     expect(packageLock.version).toBe(packageFile.version);
     expect(packageLock.packages['']?.version).toBe(packageFile.version);
     expect(backendBuild).toContain(`version = '${packageFile.version}'`);
+    expect(readWorkspaceFile('public/sw.js')).toContain(`ongi-shell-v${packageFile.version}`);
     expect(currentReleases).toHaveLength(1);
     expect(RELEASES[0]).toBe(currentReleases[0]);
     expect(RELEASES[0].version).toBe(expectedVersion);

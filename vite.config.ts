@@ -1,4 +1,5 @@
-import { defineConfig, type Plugin } from 'vite';
+import { type Plugin } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import packageJson from './package.json' with { type: 'json' };
 import {
@@ -73,6 +74,7 @@ function sharePagesPlugin(): Plugin {
 }
 
 export default defineConfig({
+  test: { include: ['tests/**/*.test.{ts,tsx}'] },
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),

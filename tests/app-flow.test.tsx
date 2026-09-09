@@ -6,6 +6,7 @@ import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../src/app/App';
+import { preloadActivity } from '../src/app/activityRegistry';
 import { QUESTIONS } from '../src/features/heart-trace/data/questions';
 import { RESULT_TYPES } from '../src/features/heart-trace/data/resultTypes';
 import { TIE_BREAKER_OPTION_LABELS } from '../src/features/heart-trace/domain/tieBreaker';
@@ -102,6 +103,8 @@ async function getAccessibilityViolations(container: HTMLElement) {
 
 describe('앱 화면 흐름과 접근성', () => {
   it('홈에서 여러 놀거리와 이용 가능한 콘텐츠를 구분해 보여준다', async () => {
+    // Cold chunk loading is covered separately by appActivityTransition and E2E.
+    await Promise.all([preloadActivity('group-picker'), preloadActivity('ideal-world-cup')]);
     const { container } = render(<App />);
 
     expect(screen.getByRole('heading', { name: '우리 사이에 온기를' })).toBeTruthy();
