@@ -6,7 +6,7 @@
 
 | 수정할 내용 | 먼저 볼 곳 |
 | --- | --- |
-| 홈 노출·활동 이름 | `src/app/activityCatalog.ts`, `src/features/home/HomeScreen.tsx` |
+| 홈 노출·활동 이름·목적 분류 | `src/app/activityCatalog.ts`, `src/app/homeSections.ts`, `src/features/home/HomeScreen.tsx` |
 | URL·활동 진입 | `src/app/activityNavigation.ts`, `ActivityRenderer.tsx`, `activityRegistry.ts` |
 | 질문·후보·문구 데이터 | 해당 활동의 `data/` |
 | 화면 배치·버튼 표시 | 해당 활동의 `screens/`, `components/`, `styles/` |
@@ -43,7 +43,7 @@ components/, platform/      활동과 무관한 공용 UI·브라우저 기능
 - **밸런스:** `state/balanceReducer.ts`가 질문 선택·시작·답변·이전/다음·완료·다시 보기를 담당한다. 시작할 질문이 없거나 답변하지 않은 경우 잘못된 진행을 거부한다.
 - **익명 나눔:** 서버가 방 상태의 기준이다. `services/roomSnapshot.ts`가 필요한 데이터를 모으고 `useSharingSession`이 최신 요청만 적용한다. reducer는 스냅샷을 한 번에 적용한다. 입력 초안은 서버 재조회보다 우선하며 700ms 지연 저장과 직렬 저장 큐를 유지한다. 초기화·홈 이동·언마운트 후의 오래된 응답은 적용하지 않는다. 표시할 화면은 `domain/selectSharingScreen.ts`에서 결정한다. 사용자 명령은 `useAnonymousSharingController`에 있다.
 - **월드컵:** `domain/tournament.ts`의 기존 계산을 유지한다. `useWorldCup`은 저장·이어하기·직전 선택 취소를 연결하고 화면은 단계별로 분리한다.
-- **구르미:** `useGureumiController`가 시도 복원·시작·완료·피드백을 담당한다. `useGureumiAnswers`가 답변별 저장 대기·실패 복원·응답 시간을 소유한다. 서버 점수 계산은 변경하지 않는다.
+- **구르미:** `state/gureumiReducer.ts`가 복원·소개·질문·결과·피드백 단계와 요청 상태를 함께 소유한다. 결과/피드백 단계에는 결과와 시도 참조가 반드시 있다. `useGureumiController`는 API 요청을 연결하며 중복 명령과 언마운트 이후 응답을 차단한다. `useGureumiAnswers`는 답변별 저장 대기·실패 복원·응답 시간을 소유하고 초기화 이전 응답을 무시한다. 새 검사 시작 실패 시 기존 이어하기/결과는 보존한다. 서버 점수 계산은 변경하지 않는다.
 
 ## 저장소와 API 호환성
 
@@ -59,11 +59,11 @@ components/, platform/      활동과 무관한 공용 UI·브라우저 기능
 1. 수정할 규칙의 domain/reducer 테스트를 추가한다.
 2. 해당 화면 흐름 테스트를 실행한다. 예: `npm test -- tests/groupPickerApp.test.tsx tests/pickerState.test.ts`.
 3. `npm run verify`와 `cd backend && ./gradlew test`를 실행한다.
-4. 화면·타이밍 변경은 실제 모바일 폭과 키보드 이동을 확인한다. 저장 변경은 이전 버전 데이터 복원과 새로고침을 확인한다.
+4. `npm run test:e2e`로 실제 브라우저의 모바일 폭·복원·동시 접속 흐름을 확인한다. 실행 조건과 범위는 [브라우저 테스트 가이드](BROWSER_TESTS.md)를 참고한다. 키보드 이동과 실제 기기 공유 동작도 점검한다.
 5. 기능별 커밋 후 버전·태그·배포를 별도로 수행한다. 운영 DB나 기존 Git 태그를 덮어쓰지 않는다.
 
 `tests/architectureBoundaries.test.ts`는 활동 간 직접 의존성과 도메인의 브라우저 의존성을 검사한다. 전체 테스트 개수는 고정 문서 숫자가 아닌 실제 검증 결과를 기준으로 한다.
 
 ## 남은 제약
 
-앱 셸과 홈은 여전히 비교적 크고, 일부 구르미 단계는 지역 상태 조합을 사용한다. 익명 나눔의 스냅샷은 여러 API 응답을 조합하므로 서버 트랜잭션 스냅샷을 의미하지 않는다. 기존 SSE·버전 충돌 검증을 유지한다. 새 기능이 이 경계를 넘어가면 통신 계약부터 검토하며, 파일을 더 잘게 나누는 것만을 목표로 하지 않는다.
+앱 셸과 홈은 여전히 비교적 크다. 홈의 목적 분류는 카탈로그의 `intent`, 배치는 `group`을 기준으로 하며 ID 조건으로 새 분류를 추가하지 않는다. 구르미 피드백 설문의 입력과 내부 하위 화면은 지역 상태로 유지한다. 익명 나눔의 스냅샷은 여러 API 응답을 조합하므로 서버 트랜잭션 스냅샷을 의미하지 않는다. 새 기능이 이 경계를 넘어가면 통신 계약부터 검토하며, 파일을 더 잘게 나누는 것만을 목표로 하지 않는다.

@@ -16,7 +16,7 @@ concurrency:
 jobs:
   verify-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -47,6 +47,22 @@ jobs:
       - name: Run backend integration tests
         working-directory: backend
         run: ./gradlew test
+
+      - name: Install browser for regression tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser and multi-user regression tests
+        run: npm run test:e2e
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-diagnostics
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
 
       - name: Configure GitHub Pages
         if: github.event_name != 'pull_request'
