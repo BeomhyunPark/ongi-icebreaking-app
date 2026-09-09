@@ -37,7 +37,12 @@ export function AnonymousSharingApp({ onBackHome }: { onBackHome: () => void }) 
       ) : null}
       {screen === 'waiting' ? <SharingWaitingScreen {...model} roomState={roomState} /> : null}
       {screen === 'story' && sharing ? (
-        <SharingStoryScreen {...model} roomState={roomState} sharing={sharing} />
+        <SharingStoryScreen
+          key={`${roomId}:${sharing.sequence}:${sharing.state}`}
+          {...model}
+          roomState={roomState}
+          sharing={sharing}
+        />
       ) : null}
       {screen === 'completed' ? <SharingCompletedScreen {...model} /> : null}
       {error ? (

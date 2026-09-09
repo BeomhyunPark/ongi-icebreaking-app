@@ -32,7 +32,6 @@ export function useAnonymousSharingController(onBackHome: () => void) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [hostWriting, setHostWriting] = useState(false);
-  const [revealConfirming, setRevealConfirming] = useState(false);
   const [cancelConfirming, setCancelConfirming] = useState(false);
   const session = useSharingSession(initialRoomId, busy, setError);
   const {
@@ -216,7 +215,6 @@ export function useAnonymousSharingController(onBackHome: () => void) {
       const nextSharing = await sharingApi.reveal(roomId);
       if (!isCurrent()) return;
       setSharing(nextSharing);
-      setRevealConfirming(false);
     });
 
   const nextStory = () =>
@@ -273,8 +271,6 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     error,
     hostWriting,
     setHostWriting,
-    revealConfirming,
-    setRevealConfirming,
     cancelConfirming,
     setCancelConfirming,
     reconnecting,

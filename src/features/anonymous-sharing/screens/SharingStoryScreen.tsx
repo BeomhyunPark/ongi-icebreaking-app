@@ -1,24 +1,22 @@
 import { PrimaryButton } from '../../../components/PrimaryButton';
 import type { AnonymousSharingController } from '../hooks/useAnonymousSharingController';
 import type { RoomState, CurrentSharing } from '../domain/types';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function SharingStoryScreen({
   roomState,
   sharing,
   busy,
-  revealConfirming,
-  setRevealConfirming,
   reveal,
   nextStory,
   completeRoom,
-}: Pick<
-  AnonymousSharingController,
-  'busy' | 'revealConfirming' | 'setRevealConfirming' | 'reveal' | 'nextStory' | 'completeRoom'
-> & { roomState: RoomState; sharing: CurrentSharing }) {
+}: Pick<AnonymousSharingController, 'busy' | 'reveal' | 'nextStory' | 'completeRoom'> & {
+  roomState: RoomState;
+  sharing: CurrentSharing;
+}) {
+  const [revealConfirming, setRevealConfirming] = useState(false);
   const storyTop = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    setRevealConfirming(false);
     if (sharing) {
       const screen = storyTop.current?.closest('.anonymous-sharing-screen');
       screen?.scrollTo?.({ top: 0, behavior: 'instant' });
