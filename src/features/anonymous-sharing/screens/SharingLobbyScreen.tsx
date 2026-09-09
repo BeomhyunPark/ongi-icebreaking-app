@@ -2,8 +2,6 @@ import { PrimaryButton } from '../../../components/PrimaryButton';
 import type { AnonymousSharingController } from '../hooks/useAnonymousSharingController';
 import type { RoomState } from '../domain/types';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShareNotice, useShareNotice } from '../../../components/ShareNotice';
-import { shareAppLink } from '../../../platform/shareLink';
 
 export function SharingLobbyScreen({
   roomState,
@@ -42,7 +40,6 @@ export function SharingLobbyScreen({
   | 'shareUrl'
   | 'lobbyStep'
 > & { roomState: RoomState }) {
-  const { message: shareMessage, clearNotice, reportShare } = useShareNotice();
   return (
     <section className="anonymous-sharing-lobby">
       <p className="eyebrow">진행자 화면</p>
@@ -62,21 +59,6 @@ export function SharingLobbyScreen({
             <QRCodeSVG value={shareUrl} size={164} level="M" marginSize={2} />
           </div>
           <p>카메라로 QR을 스캔해 참여해주세요.</p>
-          <strong className="anonymous-sharing-room-code">{visibleRoomCode}</strong>
-          <button
-            type="button"
-            onClick={async () => {
-              clearNotice();
-              try {
-                reportShare(await shareAppLink({ title: '온기 모임 초대', url: shareUrl }));
-              } catch {
-                reportShare('failed');
-              }
-            }}
-          >
-            초대 링크 공유
-          </button>
-          <ShareNotice message={shareMessage} />
         </div>
       ) : (
         <div className="anonymous-sharing-locked">

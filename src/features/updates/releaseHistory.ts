@@ -15,11 +15,22 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.3.3',
+    date: '2026.09.10',
+    title: 'QR로 간편하게 모임 참여',
+    summary: 'QR을 스캔하고 이름만 입력해 모임에 참여해요.',
+    current: true,
+    changes: [
+      { title: '참여 중심의 시작 화면', description: '모임 참여 버튼을 먼저 강조하고, 진행자의 모임 만들기는 보조 버튼으로 구분했어요.' },
+      { title: 'QR로 초대하기', description: '참여 코드와 링크 공유 버튼을 없애고 QR로 초대하도록 정리했어요.' },
+      { title: '편안한 질문 화면', description: '질문 글자 크기를 줄이고 불필요한 작성 안내를 덜어냈어요.' },
+    ],
+  },
+  {
     version: 'v2.3.2',
     date: '2026.09.09',
     title: '끊겨도 다시 이어지도록',
     summary: '모임 재연결과 테스트 이어하기를 더 안정적으로 다듬었어요.',
-    current: true,
     changes: [
       {
         title: '모임 재연결',

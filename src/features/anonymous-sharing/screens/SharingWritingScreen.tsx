@@ -46,9 +46,6 @@ export function SharingWritingScreen({
       </div>
       <p className="eyebrow">나를 소개하는 질문</p>
       <h1>{currentQuestion.prompt}</h1>
-      <p className="anonymous-sharing-help">
-        하나 이상 답한 뒤 마지막 질문에서 작성 완료를 눌러주세요.
-      </p>
       <textarea
         aria-label={currentQuestion.prompt}
         disabled={busy}

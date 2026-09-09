@@ -12,7 +12,6 @@ export function SharingEntryScreen({
   title,
   setTitle,
   roomCode,
-  setRoomCode,
   name,
   setName,
   busy,
@@ -28,7 +27,6 @@ export function SharingEntryScreen({
   | 'title'
   | 'setTitle'
   | 'roomCode'
-  | 'setRoomCode'
   | 'name'
   | 'setName'
   | 'busy'
@@ -73,8 +71,8 @@ export function SharingEntryScreen({
       ) : null}
       {entryMode === 'HOME' ? (
         <div className="anonymous-sharing-entry-actions">
-          <PrimaryButton onClick={() => setEntryMode('CREATE')}>진행자로 모임 만들기</PrimaryButton>
           <PrimaryButton onClick={() => setEntryMode('JOIN')}>모임 참여하기</PrimaryButton>
+          <button type="button" onClick={() => setEntryMode('CREATE')}>진행자로 모임 만들기</button>
         </div>
       ) : null}
 
@@ -108,40 +106,30 @@ export function SharingEntryScreen({
             모임 참여하기
           </h2>
           {!initialHash.joinCode ? (
+            <p className="anonymous-sharing-help">
+              휴대폰 카메라로 진행자의 QR을 스캔해주세요.
+              <br />
+              이름만 입력하면 모임에 참여할 수 있어요.
+            </p>
+          ) : (
             <>
-              <label htmlFor="sharing-code">참여 코드</label>
+              <label htmlFor="sharing-name">이름</label>
               <input
-                id="sharing-code"
-                value={roomCode}
-                placeholder="예: 7KFM-3QPX"
-                maxLength={9}
-                autoCapitalize="characters"
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(event) =>
-                  setRoomCode(event.target.value.toUpperCase().replace(/\s/g, ''))
-                }
+                id="sharing-name"
+                value={name}
+                maxLength={40}
+                autoComplete="name"
+                placeholder="모임에서 사용할 이름"
+                onChange={(event) => setName(event.target.value)}
               />
-              <p className="anonymous-sharing-help">
-                진행자의 QR이나 초대 링크로도 참여할 수 있어요.
-              </p>
+              <PrimaryButton
+                disabled={busy || !name.trim() || !/^[A-Z0-9]{8}$/.test(roomCode.replace(/-/g, ''))}
+                onClick={joinRoom}
+              >
+                {busy ? '입장하는 중…' : '참여하기'}
+              </PrimaryButton>
             </>
-          ) : null}
-          <label htmlFor="sharing-name">이름</label>
-          <input
-            id="sharing-name"
-            value={name}
-            maxLength={40}
-            autoComplete="name"
-            placeholder="모임에서 사용할 이름"
-            onChange={(event) => setName(event.target.value)}
-          />
-          <PrimaryButton
-            disabled={busy || !name.trim() || !/^[A-Z0-9]{8}$/.test(roomCode.replace(/-/g, ''))}
-            onClick={joinRoom}
-          >
-            {busy ? '입장하는 중…' : '참여하기'}
-          </PrimaryButton>
+          )}
           <button type="button" onClick={() => setEntryMode('HOME')}>
             이전으로
           </button>

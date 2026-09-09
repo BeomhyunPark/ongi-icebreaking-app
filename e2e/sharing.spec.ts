@@ -36,16 +36,17 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
       (response) => response.url() === `${API}/api/rooms` && response.request().method() === 'POST',
     );
     await page.getByRole('button', { name: '모임 만들기', exact: true }).click();
-    const { roomId } = (await (await created).json()) as { roomId: string };
+    const { roomId, roomCode } = (await (await created).json()) as { roomId: string; roomCode: string };
     const roomUrl = `${API}/api/rooms/${roomId}`;
-    const code = await page.locator('.anonymous-sharing-room-code').innerText();
+    await expect(page.getByRole('img', { name: '모임 참여 QR 코드' })).toBeVisible();
+    await expect(page.locator('.anonymous-sharing-room-code')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '초대 링크 공유' })).toHaveCount(0);
     await page.getByLabel('내 이름', { exact: true }).fill('진행자');
     await page.getByRole('button', { name: '나도 참여하기', exact: true }).click();
     await Promise.all(
       pages.slice(1).map(async (peer, index) => {
-        await openActivity(peer, 'anonymous-sharing');
-        await peer.getByRole('button', { name: '모임 참여하기', exact: true }).click();
-        await peer.getByLabel('참여 코드', { exact: true }).fill(code);
+        await peer.goto(`/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`);
+        await expect(peer.getByRole('textbox')).toHaveCount(1);
         await peer.getByLabel('이름', { exact: true }).fill(`참여자${index + 1}`);
         await peer.getByRole('button', { name: '참여하기', exact: true }).click();
         await expect(peer.locator('textarea')).toBeVisible();
