@@ -66,6 +66,7 @@ export function GureumiApp({ onBackHome }: { onBackHome: () => void }) {
         result={result}
         feedbackOpening={busy}
         retestStarting={busy}
+        actionError={error}
         onOpenFeedback={() => void handleOpenFeedback()}
         onRetest={handleRetest}
         onBackHome={onBackHome}
@@ -76,6 +77,8 @@ export function GureumiApp({ onBackHome }: { onBackHome: () => void }) {
   if (phase === 'feedback' && result) {
     return (
       <GureumiFeedbackFlow
+        retestStarting={busy}
+        actionError={error}
         result={result}
         questions={questions}
         onSaveQuick={handleSaveQuickFeedback}

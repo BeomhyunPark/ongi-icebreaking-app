@@ -20,6 +20,8 @@ type GureumiFeedbackFlowProps = {
   onSaveFollowUp: (feedback: GureumiFollowUpFeedback) => Promise<void>;
   onBackResult: () => void;
   onRetest: () => void;
+  retestStarting?: boolean;
+  actionError?: string;
 };
 
 const RESULT_AXES: Record<GureumiResultType, ['HIGH' | 'LOW', 'HIGH' | 'LOW', 'HIGH' | 'LOW']> = {
@@ -190,6 +192,8 @@ export function GureumiFeedbackFlow({
   onSaveFollowUp,
   onBackResult,
   onRetest,
+  retestStarting = false,
+  actionError = '',
 }: GureumiFeedbackFlowProps) {
   const [screen, setScreen] = useState<FeedbackScreen>('quick');
   const [rating, setRating] = useState<number>();
@@ -348,7 +352,8 @@ export function GureumiFeedbackFlow({
             <button className="gureumi-feedback__primary" type="button" onClick={() => go('follow-up')}>자세한 설문 참여하기</button>
           )}
           <div className="gureumi-feedback-complete__actions">
-            <button type="button" onClick={followUpComplete ? onRetest : onBackResult}>{followUpComplete ? '다시 테스트하기' : '결과로 돌아가기'}</button>
+            <button type="button" disabled={retestStarting} onClick={followUpComplete ? onRetest : onBackResult}>{followUpComplete ? '다시 테스트하기' : '결과로 돌아가기'}</button>
+            {actionError ? <p className="gureumi-feedback__error" role="alert">{actionError}</p> : null}
             <button type="button" onClick={() => void shareResult()}>결과 공유하기</button>
           </div>
         </div>

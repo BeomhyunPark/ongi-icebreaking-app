@@ -5,6 +5,7 @@ import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../src/app/App';
+import { preloadActivity } from '../src/app/activityRegistry';
 
 const ATTEMPT_ID = '30000000-0000-4000-8000-000000000001';
 const RESUME_TOKEN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_12';
@@ -36,6 +37,7 @@ afterEach(() => {
 
 describe('구르미 테스트 Beta', () => {
   it('홈에서 Beta 인트로로 진입하고 비공식 놀이형 콘텐츠임을 고지한다', async () => {
+    await preloadActivity('gureumi');
     const { container } = render(<App />);
     const betaButton = screen.getByRole('button', { name: '구르미 Beta 테스트 시작하기' });
 

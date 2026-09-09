@@ -14,6 +14,7 @@ type GureumiResultScreenProps = {
   result: GureumiResult;
   feedbackOpening?: boolean;
   retestStarting?: boolean;
+  actionError?: string;
   onOpenFeedback?: () => void;
   onRetest?: () => void;
   onBackHome?: () => void;
@@ -54,6 +55,7 @@ export function GureumiResultScreen({
   result,
   feedbackOpening = false,
   retestStarting = false,
+  actionError = '',
   onOpenFeedback,
   onRetest,
   onBackHome,
@@ -142,6 +144,7 @@ export function GureumiResultScreen({
 
   return (
     <main className="gureumi-result" style={style}>
+      {actionError ? <p className="gureumi-error" role="alert">{actionError}</p> : null}
       <article className="gureumi-result__card" aria-label={`${definition.name} 결과`}>
         {onBackHome ? (
           <nav className="gureumi-toolbar" aria-label="구르미 결과 탐색">

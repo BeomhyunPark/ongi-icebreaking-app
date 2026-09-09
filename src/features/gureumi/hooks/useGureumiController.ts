@@ -1,76 +1,56 @@
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { useGureumiAnswers } from './useGureumiAnswers';
 import { errorMessage } from '../services/errorMessage';
-import { useEffect, useMemo, useState } from 'react';
-
 import { gureumiApi, GureumiApiError } from '../api/gureumiApi';
 import {
   GUREUMI_PAGE_SIZE,
   type GureumiAttemptReference,
   type GureumiAttemptState,
   type GureumiFollowUpFeedback,
-  type GureumiQuestion,
   type GureumiQuickFeedback,
-  type GureumiResult,
 } from '../domain/types';
 import {
   clearGureumiAttempt,
   loadGureumiAttempt,
   saveGureumiAttempt,
 } from '../services/attemptStorage';
-
-type Phase = 'booting' | 'intro' | 'questions' | 'result' | 'feedback';
+import { gureumiReducer, initialGureumiState, type GureumiAction } from '../state/gureumiReducer';
 
 export function useGureumiController() {
-  const [phase, setPhase] = useState<Phase>('booting');
-  const [reference, setReference] = useState<GureumiAttemptReference | null>(loadGureumiAttempt);
-  const [resumeState, setResumeState] = useState<GureumiAttemptState | null>(null);
-  const [questions, setQuestions] = useState<GureumiQuestion[]>([]);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [result, setResult] = useState<GureumiResult | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [completing, setCompleting] = useState(false);
-  const [error, setError] = useState('');
+  const [state, dispatch] = useReducer(gureumiReducer, initialGureumiState);
+  const { reference, resumeState, questions, pageIndex } = state;
+  const lifecycle = useRef(0);
+  const pending = useRef(false);
 
   useEffect(() => {
+    const generation = ++lifecycle.current;
+    const active = () => lifecycle.current === generation;
     const saved = loadGureumiAttempt();
-    let active = true;
-
-    if (!saved) {
-      setPhase('intro');
-      return () => {
-        active = false;
-      };
-    }
-
-    void gureumiApi
-      .getCurrent(saved.resumeToken)
-      .then(async (state) => {
-        if (!active) return;
-        setReference(saved);
-        if (state.completed) {
-          const completedResult = await gureumiApi.getResult(saved.attemptId, saved.resumeToken);
-          if (!active) return;
-          setResult(completedResult);
-          setResumeState(null);
-          setPhase('result');
-        } else {
-          setResumeState(state);
-          setPhase('intro');
+    if (!saved) dispatch({ type: 'RESTORE_INTRO', reference: null, resumeState: null });
+    else
+      void (async () => {
+        try {
+          const attempt = await gureumiApi.getCurrent(saved.resumeToken);
+          if (!active()) return;
+          if (attempt.completed) {
+            const result = await gureumiApi.getResult(saved.attemptId, saved.resumeToken);
+            if (active()) dispatch({ type: 'RESULT', reference: saved, result });
+          } else dispatch({ type: 'RESTORE_INTRO', reference: saved, resumeState: attempt });
+        } catch (error) {
+          if (!active()) return;
+          const expired = error instanceof GureumiApiError && error.status === 401;
+          if (expired) clearGureumiAttempt();
+          dispatch({
+            type: 'RESTORE_INTRO',
+            reference: expired ? null : saved,
+            resumeState: null,
+            error: expired ? '' : errorMessage(error),
+          });
         }
-      })
-      .catch((loadError) => {
-        if (!active) return;
-        if (loadError instanceof GureumiApiError && loadError.status === 401) {
-          clearGureumiAttempt();
-          setReference(null);
-        } else {
-          setError(errorMessage(loadError));
-        }
-        setPhase('intro');
-      });
-
+      })();
     return () => {
-      active = false;
+      lifecycle.current++;
+      pending.current = false;
     };
   }, []);
 
@@ -78,152 +58,128 @@ export function useGureumiController() {
     () => questions.slice(pageIndex * GUREUMI_PAGE_SIZE, (pageIndex + 1) * GUREUMI_PAGE_SIZE),
     [pageIndex, questions],
   );
-
-  const { answers, pendingQuestionIds, saveErrors, handleAnswer, resetAnswers, reportSaveError } =
-    useGureumiAnswers(reference, currentQuestions);
+  const answerState = useGureumiAnswers(reference, currentQuestions);
+  const { answers, pendingQuestionIds, resetAnswers, reportSaveError } = answerState;
 
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [currentQuestions]);
 
+  // The synchronous lock catches duplicate commands before React renders.
+  // The generation guard prevents departed screens from writing storage/state.
+  const run = async (
+    operation: Extract<GureumiAction, { type: 'BEGIN' }>['operation'],
+    work: (active: () => boolean) => Promise<void>,
+  ) => {
+    if (pending.current || gureumiReducer(state, { type: 'BEGIN', operation }) === state) return;
+    pending.current = true;
+    const generation = lifecycle.current;
+    const active = () => generation === lifecycle.current;
+    dispatch({ type: 'BEGIN', operation });
+    try {
+      await work(active);
+    } catch (error) {
+      if (active()) {
+        dispatch({ type: 'FAILED', error: errorMessage(error) });
+        if (operation === 'complete')
+          reportSaveError(currentQuestions.at(-1)?.questionId ?? 'completion', errorMessage(error));
+      }
+    } finally {
+      if (active()) pending.current = false;
+    }
+  };
+
   const openAttempt = async (
     nextReference: GureumiAttemptReference,
+    active: () => boolean,
     knownState?: GureumiAttemptState,
   ) => {
-    const [state, questionResponse] = await Promise.all([
+    const [attempt, response] = await Promise.all([
       knownState ?? gureumiApi.getCurrent(nextReference.resumeToken),
       gureumiApi.getQuestions(nextReference.attemptId, nextReference.resumeToken),
     ]);
-    setReference(nextReference);
+    if (!active()) return;
+    if (attempt.completed || response.questions.length === 0)
+      throw new Error('질문을 불러오지 못했어요. 다시 시도해주세요.');
     saveGureumiAttempt(nextReference);
-    setResumeState(state);
-    setQuestions(questionResponse.questions);
-    resetAnswers(state.answers);
-    setPageIndex(Math.max(0, Math.floor((state.nextOrder - 1) / GUREUMI_PAGE_SIZE)));
-    setError('');
-    setPhase('questions');
+    resetAnswers(attempt.answers);
+    dispatch({ type: 'OPEN', reference: nextReference, attempt, questions: response.questions });
   };
-
-  const createAndOpen = async (previousToken?: string) => {
-    setBusy(true);
-    setError('');
-    try {
+  const createAndOpen = (previousToken?: string) =>
+    run('start', async (active) => {
       const created = await gureumiApi.createAttempt(previousToken);
-      await openAttempt({ attemptId: created.attemptId, resumeToken: created.resumeToken });
-    } catch (startError) {
-      setError(errorMessage(startError));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleResume = async () => {
-    if (!reference || !resumeState) return;
-    setBusy(true);
-    setError('');
-    try {
-      await openAttempt(reference, resumeState);
-    } catch (resumeError) {
-      setError(errorMessage(resumeError));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleStartFresh = () => {
-    clearGureumiAttempt();
-    setReference(null);
-    setResumeState(null);
-    void createAndOpen();
-  };
-
+      if (active())
+        await openAttempt(
+          { attemptId: created.attemptId, resumeToken: created.resumeToken },
+          active,
+        );
+    });
+  const handleResume = () =>
+    run('resume', async (active) => {
+      if (!reference || !resumeState) throw new Error('이어 할 검사를 찾지 못했어요.');
+      await openAttempt(reference, active, resumeState);
+    });
   const handleNext = async () => {
-    if (!reference) return;
-    const lastOrder = currentQuestions.at(-1)?.order ?? 0;
-    if (lastOrder < 27) {
-      setPageIndex((current) => current + 1);
+    if (
+      state.phase !== 'questions' ||
+      pending.current ||
+      pendingQuestionIds.size > 0 ||
+      !currentQuestions.length ||
+      currentQuestions.some(({ questionId }) => !answers[questionId])
+    )
+      return;
+    if ((pageIndex + 1) * GUREUMI_PAGE_SIZE < questions.length) {
+      dispatch({ type: 'PAGE', direction: 1 });
       return;
     }
-
-    setCompleting(true);
-    setError('');
-    try {
-      await gureumiApi.complete(reference.attemptId, reference.resumeToken);
-      const completedResult = await gureumiApi.getResult(
-        reference.attemptId,
-        reference.resumeToken,
+    await run('complete', async (active) => {
+      await gureumiApi.complete(state.reference.attemptId, state.reference.resumeToken);
+      if (!active()) return;
+      const result = await gureumiApi.getResult(
+        state.reference.attemptId,
+        state.reference.resumeToken,
       );
-      setResult(completedResult);
-      setResumeState(null);
-      setPhase('result');
-    } catch (completeError) {
-      reportSaveError(
-        currentQuestions.at(-1)?.questionId ?? 'completion',
-        errorMessage(completeError),
-      );
-    } finally {
-      setCompleting(false);
-    }
+      if (active()) dispatch({ type: 'RESULT', reference: state.reference, result });
+    });
   };
-
-  const handleOpenFeedback = async () => {
-    if (!reference || !result || busy) return;
-    setBusy(true);
-    setError('');
-    try {
-      if (questions.length !== 27) {
-        const response = await gureumiApi.getQuestions(reference.attemptId, reference.resumeToken);
-        setQuestions(response.questions);
-      }
-      setPhase('feedback');
-    } catch (feedbackError) {
-      setError(errorMessage(feedbackError));
-    } finally {
-      setBusy(false);
-    }
-  };
-
+  const handleOpenFeedback = () =>
+    run('feedback', async (active) => {
+      if (!reference) return;
+      const response = questions.length
+        ? { questions }
+        : await gureumiApi.getQuestions(reference.attemptId, reference.resumeToken);
+      if (active()) dispatch({ type: 'FEEDBACK', questions: response.questions });
+    });
   const handleSaveQuickFeedback = async (feedback: GureumiQuickFeedback) => {
     if (!reference) throw new Error('GUREUMI_ATTEMPT_NOT_FOUND');
     await gureumiApi.saveFeedback(reference.attemptId, reference.resumeToken, feedback);
   };
-
   const handleSaveFollowUpFeedback = async (feedback: GureumiFollowUpFeedback) => {
     if (!reference) throw new Error('GUREUMI_ATTEMPT_NOT_FOUND');
     await gureumiApi.saveFollowUpFeedback(reference.attemptId, reference.resumeToken, feedback);
   };
-
-  const handleRetest = () => {
-    if (busy) return;
-    const previousToken = reference?.resumeToken;
-    void createAndOpen(previousToken);
-  };
-
   return {
-    phase,
-    result,
-    questions,
+    ...state,
+    ...answerState,
     currentQuestions,
-    answers,
-    pageIndex,
-    pendingQuestionIds,
-    saveErrors,
-    completing,
-    busy,
-    error,
-    resumeState,
-    reference,
-    handleAnswer,
+    busy: state.operation !== 'idle',
+    completing: state.operation === 'complete',
     handleNext,
+    handleResume,
     handleOpenFeedback,
-    handleRetest,
     handleSaveQuickFeedback,
     handleSaveFollowUpFeedback,
-    handleResume,
-    handleStartFresh,
     createAndOpen,
-    previousPage: () => setPageIndex((current) => Math.max(0, current - 1)),
-    backToResult: () => setPhase('result'),
+    handleStartFresh: () => {
+      void createAndOpen();
+    },
+    handleRetest: () => {
+      void createAndOpen(reference?.resumeToken);
+    },
+    previousPage: () => {
+      if (!pending.current) dispatch({ type: 'PAGE', direction: -1 });
+    },
+    backToResult: () => dispatch({ type: 'BACK_TO_RESULT' }),
   };
 }

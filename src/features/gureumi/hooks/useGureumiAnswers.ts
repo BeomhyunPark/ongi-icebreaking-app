@@ -20,6 +20,17 @@ export function useGureumiAnswers(
   const [pendingQuestionIds, setPendingQuestionIds] = useState<Set<string>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Partial<Record<string, string>>>({});
   const pageEnteredAt = useRef<Record<string, number>>({});
+  const generation = useRef(0);
+  const pending = useRef(new Set<string>());
+
+  useEffect(() => {
+    generation.current++;
+    pending.current.clear();
+    return () => {
+      generation.current++;
+      pending.current.clear();
+    };
+  }, [reference?.attemptId]);
 
   useEffect(() => {
     const now = Date.now();
@@ -29,7 +40,10 @@ export function useGureumiAnswers(
   }, [currentQuestions]);
 
   const handleAnswer = async (question: GureumiQuestion, choice: GureumiChoice) => {
-    if (!reference || pendingQuestionIds.has(question.questionId)) return;
+    if (!reference || pending.current.has(question.questionId)) return;
+    pending.current.add(question.questionId);
+    const requestGeneration = generation.current;
+    const active = () => requestGeneration === generation.current;
     const previousChoice = answers[question.questionId];
     const responseMs = Math.min(
       3_600_000,
@@ -46,6 +60,7 @@ export function useGureumiAnswers(
         responseMs,
       });
     } catch (saveError) {
+      if (!active()) return;
       setAnswers((current) => {
         const next = { ...current };
         if (previousChoice) next[question.questionId] = previousChoice;
@@ -57,11 +72,14 @@ export function useGureumiAnswers(
         [question.questionId]: errorMessage(saveError),
       }));
     } finally {
-      setPendingQuestionIds((current) => {
-        const next = new Set(current);
-        next.delete(question.questionId);
-        return next;
-      });
+      if (active()) {
+        pending.current.delete(question.questionId);
+        setPendingQuestionIds((current) => {
+          const next = new Set(current);
+          next.delete(question.questionId);
+          return next;
+        });
+      }
     }
   };
 
@@ -71,6 +89,8 @@ export function useGureumiAnswers(
     saveErrors,
     handleAnswer,
     resetAnswers: (saved: GureumiAnswer[]) => {
+      generation.current++;
+      pending.current.clear();
       setAnswers(answersByQuestion(saved));
       setPendingQuestionIds(new Set());
       setSaveErrors({});
