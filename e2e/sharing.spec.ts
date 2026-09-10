@@ -49,7 +49,8 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
       await leavingPage.goto(`/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`);
       await leavingPage.getByLabel('이름', { exact: true }).fill('잠시 참여');
       await leavingPage.getByRole('button', { name: '참여하기', exact: true }).click();
-      await leavingPage.getByRole('textbox').fill('나가면 지워질 답변');
+      await expect(leavingPage.locator('textarea')).toBeVisible();
+      await leavingPage.locator('textarea').fill('나가면 지워질 답변');
       await expect(page.locator('.anonymous-sharing-participants')).toContainText('잠시 참여');
       await leavingPage.getByRole('button', { name: '모임 나가기', exact: true }).click();
       const dialog = leavingPage.getByRole('dialog', { name: '모임에서 나갈까요?' });
