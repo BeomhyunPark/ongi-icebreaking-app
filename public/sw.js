@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ongi-shell-v2.5.0';
+const CACHE_NAME = 'ongi-shell-v2.5.1';
 const APP_ROOT = self.registration.scope;
 const APP_ROOT_PATH = new URL(APP_ROOT).pathname;
 const APP_SHELL = [

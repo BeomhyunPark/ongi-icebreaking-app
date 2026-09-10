@@ -91,6 +91,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
 
   const handleBackHome = () => {
     session.invalidate();
+    setError('');
     if (roomState?.status === 'COMPLETED') {
       clearRoomReference();
     }
@@ -109,6 +110,19 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     setLeaveConfirming(false);
     setEntryMode(nextEntryMode);
     setBusy(false);
+  };
+
+  const changeEntryMode = (nextEntryMode: EntryMode) => {
+    // Entry navigation ends the previous attempt, including any late error response.
+    session.invalidate();
+    setError('');
+    setBusy(false);
+    if (nextEntryMode === 'HOME') {
+      setRoomCode('');
+      setName('');
+      replaceSharingHash(null);
+    }
+    setEntryMode(nextEntryMode);
   };
 
   const startNewRoom = () => resetRoom('CREATE');
@@ -275,7 +289,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     initialHash,
     acceptJoinCode,
     entryMode,
-    setEntryMode,
+    setEntryMode: changeEntryMode,
     roomId,
     roomState,
     participants,

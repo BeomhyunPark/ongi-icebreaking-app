@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AnonymousSharingApp } from '../src/features/anonymous-sharing/AnonymousSharingApp';
-import { sharingApi } from '../src/features/anonymous-sharing/api/sharingApi';
+import { SharingApiError, sharingApi } from '../src/features/anonymous-sharing/api/sharingApi';
 
 const events = vi.hoisted(() => ({ refresh: () => {} }));
 vi.mock('../src/features/anonymous-sharing/hooks/useRoomEvents', () => ({
@@ -78,4 +78,32 @@ it('다른 참여자의 공개 이벤트에도 맨 위로 이동하고 공개된
   expect(scrollContainer).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
   expect(document.activeElement).toBe(title);
   expect(screen.queryByRole('button', { name: '이거 저예요' })).toBeNull();
+});
+
+
+it('방 삭제 안내는 로비로 돌아가면 사라지고 이전 모임 코드로 다시 참여하지 않는다', async () => {
+  window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
+  vi.spyOn(sharingApi, 'joinRoom').mockResolvedValue({
+    roomId: id, title: room.title, status: 'WRITING',
+    participant: { id: 'participant', name: '은혜', responseCompleted: false }, expiresAt: room.expiresAt,
+  });
+  const state = vi.spyOn(sharingApi, 'getState').mockResolvedValue(room);
+  vi.spyOn(sharingApi, 'getQuestions').mockResolvedValue({ questions: [{ id: 'q1', position: 1, prompt: '첫 질문' }] });
+  vi.spyOn(sharingApi, 'getMyResponses').mockResolvedValue({ answers: [], completed: false });
+  render(<AnonymousSharingApp onBackHome={() => {}} />);
+  fireEvent.change(screen.getByLabelText('이름'), { target: { value: '은혜' } });
+  fireEvent.click(screen.getByRole('button', { name: '참여하기' }));
+  await screen.findByRole('heading', { name: '첫 질문' });
+  state.mockRejectedValue(new SharingApiError(401, 'ROOM_SESSION_REQUIRED', '이 모임에 다시 참여해주세요.'));
+  events.refresh();
+  await screen.findByRole('alert');
+  fireEvent.click(screen.getByRole('button', { name: '이전으로' }));
+  expect(screen.getByRole('button', { name: '모임 참여하기' })).toBeTruthy();
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '진행자로 모임 만들기' }));
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '이전으로' }));
+  fireEvent.click(screen.getByRole('button', { name: '모임 참여하기' }));
+  expect(screen.queryByLabelText('이름')).toBeNull();
+  expect(screen.queryByText('이 모임에 다시 참여해주세요.')).toBeNull();
 });

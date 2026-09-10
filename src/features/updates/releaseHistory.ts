@@ -15,11 +15,20 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.5.1',
+    date: '2026.09.10',
+    title: '이전 모임 안내 정리',
+    summary: '로비로 돌아오면 이전 모임의 오류 안내가 남지 않아요.',
+    current: true,
+    changes: [
+      { title: '안내 초기화', description: '방 삭제 안내를 확인한 뒤 로비로 돌아가거나 다른 입장 화면으로 이동하면 이전 오류와 참여 정보를 정리해요.' },
+    ],
+  },
+  {
     version: 'v2.5.0',
     date: '2026.09.10',
     title: '모임 나가기와 확인 팝업',
     summary: '작성 중에도 모임에서 나갈 수 있고, 중요한 선택은 팝업에서 확인해요.',
-    current: true,
     changes: [
       { title: '참여자 모임 나가기', description: '나눔 시작 전에는 작성·대기 화면에서 나갈 수 있어요. 내 이름과 답변이 삭제되고 참여 인원에서도 빠져요.' },
       { title: '중앙 확인 팝업', description: '방 없애기와 모임 나가기는 화면 중앙의 팝업에서 한 번 더 확인해요.' },
