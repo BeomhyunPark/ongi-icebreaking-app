@@ -77,6 +77,10 @@ export const sharingApi = {
     body: JSON.stringify({ roomCode, name }),
   }),
 
+  leaveRoom: (roomId: string) => request<{ left: true }>(
+    `/api/rooms/${roomId}/leave`, { method: 'POST' },
+  ),
+
   getState: (roomId: string) => request<RoomState>(`/api/rooms/${roomId}/state`),
 
   getParticipants: (roomId: string) => request<{ participants: ParticipantStatus[] }>(

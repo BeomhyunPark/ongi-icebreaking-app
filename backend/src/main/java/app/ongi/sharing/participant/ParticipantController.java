@@ -7,6 +7,7 @@ import static app.ongi.sharing.participant.ParticipantDtos.ParticipantMe;
 
 import java.time.Clock;
 import java.util.UUID;
+import java.util.Map;
 
 import app.ongi.sharing.session.RoomAccess;
 import app.ongi.sharing.session.RoomAuthorizationService;
@@ -50,6 +51,15 @@ public class ParticipantController {
                 SessionRole.PARTICIPANT, joined.rawToken(), joined.response().roomId(), joined.response().expiresAt(), clock.instant()
             ).toString())
             .body(joined.response());
+    }
+
+    @PostMapping("/api/rooms/{roomId}/leave")
+    ResponseEntity<Map<String, Boolean>> leave(@PathVariable UUID roomId, HttpServletRequest request) {
+        RoomAccess access = authorizationService.requireAny(request, roomId);
+        participantService.leave(access);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, cookieService.clear(SessionRole.PARTICIPANT, roomId).toString())
+            .body(Map.of("left", true));
     }
 
     @GetMapping("/api/rooms/{roomId}/participants/me")

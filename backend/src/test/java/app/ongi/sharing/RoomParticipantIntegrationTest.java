@@ -436,6 +436,43 @@ class RoomParticipantIntegrationTest {
             .andExpect(jsonPath("$.code", is("ROOM_NOT_JOINABLE")));
     }
 
+    @Test
+    void participantCanLeaveWhileLockedAndRemoveAnswersSessionsAndCounts() throws Exception {
+        MvcResult room = createRoom("나가기 검증");
+        String roomId = jsonValue(room, "roomId");
+        String code = jsonValue(room, "roomCode");
+        Cookie host = room.getResponse().getCookie("ongi_host_session");
+        MvcResult joined = join(code, "나갈 사람").andExpect(status().isOk()).andReturn();
+        Cookie person = joined.getResponse().getCookie("ongi_participant_session");
+        Cookie other = join(code, "남을 사람").andExpect(status().isOk()).andReturn().getResponse().getCookie("ongi_participant_session");
+        String participantId = objectMapper.readTree(joined.getResponse().getContentAsString()).path("participant").path("id").asText();
+        String questionId = objectMapper.readTree(mockMvc.perform(get("/api/rooms/{roomId}/questions", roomId).cookie(person))
+            .andReturn().getResponse().getContentAsString()).path("questions").get(0).path("id").asText();
+        saveAnswer(roomId, person, questionId, "삭제할 답변");
+        completeAnswers(roomId, person);
+        saveAnswer(roomId, other, questionId, "유지할 답변");
+        jdbcTemplate.update("UPDATE rooms SET status = 'LOCKED' WHERE public_id = ?", UUID.fromString(roomId));
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId).cookie(host).header("X-OnGi-Client", "web"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId).header("X-OnGi-Client", "web"))
+            .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId).cookie(person).header("X-OnGi-Client", "web"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.left", is(true)))
+            .andExpect(cookie().maxAge("ongi_participant_session", 0));
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).cookie(person)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).cookie(host))
+            .andExpect(jsonPath("$.participantCount", is(1))).andExpect(jsonPath("$.completedParticipantCount", is(0)));
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM responses WHERE participant_id = ?", Integer.class, UUID.fromString(participantId))).isZero();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM room_sessions WHERE participant_id = ?", Integer.class, UUID.fromString(participantId))).isZero();
+        mockMvc.perform(get("/api/rooms/{roomId}/responses/me", roomId).cookie(other))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.answers[0].answer", is("유지할 답변")));
+        jdbcTemplate.update("UPDATE rooms SET status = 'WRITING' WHERE public_id = ?", UUID.fromString(roomId));
+        Cookie rejoined = join(code, "나갈 사람").andExpect(status().isOk()).andReturn().getResponse().getCookie("ongi_participant_session");
+        jdbcTemplate.update("UPDATE rooms SET status = 'SHARING' WHERE public_id = ?", UUID.fromString(roomId));
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId).cookie(rejoined).header("X-OnGi-Client", "web"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code", is("ROOM_NOT_LEAVABLE")));
+    }
+
     private void saveAnswer(String roomId, Cookie cookie, String questionId, String answer) throws Exception {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/rooms/{roomId}/responses", roomId)
                 .cookie(cookie)

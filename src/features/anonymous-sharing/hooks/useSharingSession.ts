@@ -140,6 +140,7 @@ export function useSharingSession(
           [question.id]: answers[question.id] ?? '',
         });
     },
+    settlePendingSaves: () => saveQueue.current.catch(() => undefined),
     resetSession: () => {
       invalidate();
       if (roomId) removeDraft(roomId);

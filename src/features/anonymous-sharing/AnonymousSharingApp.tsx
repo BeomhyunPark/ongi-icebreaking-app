@@ -1,4 +1,5 @@
 import { ScreenLayout } from '../../components/ScreenLayout';
+import { RoomExitDialog } from './components/RoomExitDialog';
 import { SharingHeader } from './components/SharingHeader';
 import { useAnonymousSharingController } from './hooks/useAnonymousSharingController';
 import { selectSharingScreen } from './domain/selectSharingScreen';
@@ -20,11 +21,16 @@ export function AnonymousSharingApp({ onBackHome }: { onBackHome: () => void }) 
       </ScreenLayout>
     );
   if (!roomState || !roomId) return <SharingEntryScreen {...model} />;
+  const canLeave = roomState.role === 'PARTICIPANT' && ['CREATED', 'WRITING', 'LOCKED'].includes(roomState.status);
   const screen = selectSharingScreen(roomState, model.hostWriting);
   return (
     <ScreenLayout className="anonymous-sharing-screen">
       {roomState.status !== 'COMPLETED' ? (
-        <SharingHeader onBackHome={model.handleBackHome} />
+        <SharingHeader
+          onBackHome={model.handleBackHome}
+          onLeave={canLeave ? () => model.setLeaveConfirming(true) : undefined}
+          busy={model.busy}
+        />
       ) : null}
       {reconnecting ? (
         <p className="anonymous-sharing-network" role="status">
@@ -45,7 +51,16 @@ export function AnonymousSharingApp({ onBackHome }: { onBackHome: () => void }) 
         />
       ) : null}
       {screen === 'completed' ? <SharingCompletedScreen {...model} /> : null}
-      {error ? (
+      {model.cancelConfirming || (canLeave && model.leaveConfirming) ? (
+        <RoomExitDialog
+          kind={model.cancelConfirming ? 'delete' : 'leave'}
+          busy={model.busy}
+          error={error}
+          onCancel={() => { model.setCancelConfirming(false); model.setLeaveConfirming(false); }}
+          onConfirm={model.cancelConfirming ? model.cancelRoom : model.leaveRoom}
+        />
+      ) : null}
+      {error && !model.cancelConfirming && !model.leaveConfirming ? (
         <p className="anonymous-sharing-error" role="alert">
           {error}
         </p>

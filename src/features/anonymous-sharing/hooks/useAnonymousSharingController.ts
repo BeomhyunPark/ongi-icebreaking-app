@@ -37,6 +37,8 @@ export function useAnonymousSharingController(onBackHome: () => void) {
   const [error, setError] = useState('');
   const [hostWriting, setHostWriting] = useState(false);
   const [cancelConfirming, setCancelConfirming] = useState(false);
+  const [leaveConfirming, setLeaveConfirming] = useState(false);
+  const leaving = useRef(false);
   const session = useSharingSession(initialRoomId, busy, setError);
   const {
     roomId,
@@ -60,7 +62,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
   }, [roomState?.status]);
 
   const refreshCurrentRoom = useCallback(() => {
-    if (roomId) {
+    if (roomId && !leaving.current) {
       void hydrateRoom(roomId);
     }
   }, [hydrateRoom, roomId]);
@@ -104,6 +106,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     setError('');
     setHostWriting(false);
     setCancelConfirming(false);
+    setLeaveConfirming(false);
     setEntryMode(nextEntryMode);
     setBusy(false);
   };
@@ -127,6 +130,21 @@ export function useAnonymousSharingController(onBackHome: () => void) {
       void startContentParticipation('anonymous-sharing');
       await session.openRoom(joined.roomId);
       if (!isCurrent()) return;
+    });
+
+  const leaveRoom = () =>
+    run(async (isCurrent) => {
+      if (!roomId || roomState?.role !== 'PARTICIPANT') return;
+      leaving.current = true;
+      try {
+        await session.settlePendingSaves();
+        if (!isCurrent()) return;
+        await sharingApi.leaveRoom(roomId);
+        if (!isCurrent()) return;
+        resetRoom('HOME');
+      } finally {
+        leaving.current = false;
+      }
     });
 
   const lockRoom = () =>
@@ -278,6 +296,9 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     setHostWriting,
     cancelConfirming,
     setCancelConfirming,
+    leaveConfirming,
+    setLeaveConfirming,
+    leaveRoom,
     reconnecting,
     handleBackHome,
     startNewRoom,

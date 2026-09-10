@@ -15,11 +15,21 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.5.0',
+    date: '2026.09.10',
+    title: '모임 나가기와 확인 팝업',
+    summary: '작성 중에도 모임에서 나갈 수 있고, 중요한 선택은 팝업에서 확인해요.',
+    current: true,
+    changes: [
+      { title: '참여자 모임 나가기', description: '나눔 시작 전에는 작성·대기 화면에서 나갈 수 있어요. 내 이름과 답변이 삭제되고 참여 인원에서도 빠져요.' },
+      { title: '중앙 확인 팝업', description: '방 없애기와 모임 나가기는 화면 중앙의 팝업에서 한 번 더 확인해요.' },
+    ],
+  },
+  {
     version: 'v2.4.0',
     date: '2026.09.10',
     title: '카메라로 바로 모임 참여',
     summary: '모임 참여하기를 누르면 카메라로 QR을 찍고 바로 참여할 수 있어요.',
-    current: true,
     changes: [
       { title: '앱 안에서 QR 스캔', description: '참여 버튼에서 카메라를 열고, 모임 QR을 인식하면 이름 입력으로 이어져요.' },
       { title: '카메라 사용 안내', description: '권한이 없거나 카메라를 사용할 수 없을 때 다시 시도하는 방법을 안내해요.' },

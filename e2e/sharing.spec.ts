@@ -42,6 +42,30 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
     await expect(page.locator('.anonymous-sharing-room-code')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '초대 링크 공유' })).toHaveCount(0);
     const qrSvg = await page.locator('.anonymous-sharing-qr svg').evaluate((svg) => new XMLSerializer().serializeToString(svg));
+    const leavingContext = await browser.newContext();
+    try {
+      await protectContext(leavingContext);
+      const leavingPage = await leavingContext.newPage();
+      await leavingPage.goto(`/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`);
+      await leavingPage.getByLabel('이름', { exact: true }).fill('잠시 참여');
+      await leavingPage.getByRole('button', { name: '참여하기', exact: true }).click();
+      await leavingPage.getByRole('textbox').fill('나가면 지워질 답변');
+      await expect(page.locator('.anonymous-sharing-participants')).toContainText('잠시 참여');
+      await leavingPage.getByRole('button', { name: '모임 나가기', exact: true }).click();
+      const dialog = leavingPage.getByRole('dialog', { name: '모임에서 나갈까요?' });
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole('button', { name: '계속 작성하기' }).click();
+      await expect(leavingPage.getByRole('textbox')).toHaveValue('나가면 지워질 답변');
+      await leavingPage.getByRole('button', { name: '모임 나가기', exact: true }).click();
+      await dialog.getByRole('button', { name: '모임 나가기', exact: true }).click();
+      await expect(leavingPage.getByRole('button', { name: '모임 참여하기', exact: true })).toBeVisible();
+      await expect(page.locator('.anonymous-sharing-progress-summary strong')).toHaveText('0/0');
+      await expect(page.locator('.anonymous-sharing-participants')).not.toContainText('잠시 참여');
+      await leavingPage.reload();
+      await expect(leavingPage.getByRole('button', { name: '모임 참여하기', exact: true })).toBeVisible();
+    } finally {
+      await leavingContext.close();
+    }
     await page.getByLabel('내 이름', { exact: true }).fill('진행자');
     await page.getByRole('button', { name: '나도 참여하기', exact: true }).click();
     await Promise.all(
@@ -181,4 +205,27 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
   } finally {
     await Promise.all(peers.map((peer) => peer.close()));
   }
+});
+
+
+test('방 없애기는 작은 화면에서도 중앙 팝업으로 확인하고 취소 시 버튼으로 돌아온다', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await openActivity(page, 'anonymous-sharing');
+  await page.getByRole('button', { name: '진행자로 모임 만들기', exact: true }).click();
+  await page.getByRole('button', { name: '모임 만들기', exact: true }).click();
+  const trigger = page.getByRole('button', { name: '방 없애기', exact: true });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: '정말 이 방을 없앨까요?' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '계속 사용하기' })).toBeFocused();
+  expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
+  const box = await dialog.boundingBox();
+  expect(box!.y).toBeGreaterThan(0);
+  expect(box!.y + box!.height).toBeLessThan(740);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await dialog.getByRole('button', { name: '방 없애기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '진행자로 모임 만들기', exact: true })).toBeVisible();
 });

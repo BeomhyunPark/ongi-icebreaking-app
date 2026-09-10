@@ -86,6 +86,28 @@ public class ParticipantService {
         return new JoinedParticipant(response, rawToken);
     }
 
+    @Transactional
+    public void leave(RoomAccess access) {
+        Room room = roomRepository.findByIdForUpdate(access.roomId())
+            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
+        if (access.role() == SessionRole.HOST) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "HOST_CANNOT_LEAVE", "진행자는 진행자 화면에서 모임을 관리해주세요.");
+        }
+        if (room.getStatus() != RoomStatus.CREATED && room.getStatus() != RoomStatus.WRITING && room.getStatus() != RoomStatus.LOCKED) {
+            throw new ApiException(HttpStatus.CONFLICT, "ROOM_NOT_LEAVABLE", "나눔이 이미 시작되어 지금은 모임에서 나갈 수 없어요.");
+        }
+        if (access.participantId() == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "PARTICIPANT_SESSION_REQUIRED", "참여자 정보가 없어요.");
+        }
+        Participant participant = participantRepository.findByIdAndRoomId(access.participantId(), access.roomId())
+            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "PARTICIPANT_SESSION_REQUIRED", "참여자 정보가 없어요."));
+        sessionRepository.deleteAllByRoomIdAndParticipantId(room.getId(), participant.getId());
+        // Foreign keys remove this participant's answers in the same transaction.
+        participantRepository.delete(participant);
+        participantRepository.flush();
+        eventPublisher.publishAfterCommit(room.getPublicId(), RoomEventType.PARTICIPANT_PROGRESS_CHANGED, room.getVersion());
+    }
+
     @Transactional(readOnly = true)
     public ParticipantMe me(RoomAccess access) {
         if (access.participantId() == null) {

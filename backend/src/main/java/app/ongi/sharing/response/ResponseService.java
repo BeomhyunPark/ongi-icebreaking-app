@@ -66,7 +66,7 @@ public class ResponseService {
 
     @Transactional
     public MyResponsesResponse save(RoomAccess access, List<ResponseDtos.AnswerInput> inputs) {
-        Room room = requireRoom(access);
+        Room room = requireLockedRoom(access);
         Participant participant = requireParticipant(access);
         requireWritable(room, participant);
         if (inputs.size() != new HashSet<>(inputs.stream().map(ResponseDtos.AnswerInput::questionId).toList()).size()) {
@@ -102,7 +102,7 @@ public class ResponseService {
 
     @Transactional
     public MyResponsesResponse complete(RoomAccess access) {
-        Room room = requireRoom(access);
+        Room room = requireLockedRoom(access);
         Participant participant = requireParticipant(access);
         if (participant.isResponseCompleted()) {
             return mine(access);
@@ -127,6 +127,11 @@ public class ResponseService {
         participant.reopenResponses();
         eventPublisher.publishAfterCommit(room.getPublicId(), RoomEventType.PARTICIPANT_PROGRESS_CHANGED, room.getVersion());
         return mine(access);
+    }
+
+    private Room requireLockedRoom(RoomAccess access) {
+        return roomRepository.findByIdForUpdate(access.roomId())
+            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
     }
 
     private Room requireRoom(RoomAccess access) {

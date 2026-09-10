@@ -309,46 +309,31 @@
   font-size: 0.75rem;
 }
 
-.anonymous-sharing-cancel-confirm {
-  padding: 1rem;
-  border: 1px solid rgba(255, 99, 120, 0.25);
-  border-radius: 1rem;
-  background: rgba(45, 16, 42, 0.58);
-  text-align: left;
+.anonymous-sharing-exit-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 3rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 99, 120, 0.35);
+  border-radius: 1.25rem;
+  background: #201b38;
+  color: #fff;
+  box-shadow: 0 1rem 4rem #0008;
 }
-
-.anonymous-sharing-cancel-confirm > strong {
-  color: #ffd8de;
-}
-
-.anonymous-sharing-cancel-confirm > p {
-  margin: 0.5rem 0 1rem;
-  color: var(--ongi-text-secondary);
-  font-size: 0.8125rem;
-  line-height: 1.55;
-}
-
-.anonymous-sharing-cancel-confirm > div {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.625rem;
-}
-
-.anonymous-sharing-cancel-confirm button {
+.anonymous-sharing-exit-dialog::backdrop { background: rgba(5, 9, 24, 0.75); }
+.anonymous-sharing-exit-dialog h2 { margin: 0; font-size: 1.25rem; }
+.anonymous-sharing-exit-dialog > p { margin: 0.75rem 0 1.25rem; color: #d4cde1; line-height: 1.65; font-size: 0.875rem; }
+.anonymous-sharing-exit-dialog > div { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+.anonymous-sharing-exit-dialog button {
   min-height: 3rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 1rem;
+  border: 1px solid #ffffff40;
+  border-radius: 0.875rem;
   background: transparent;
-  color: var(--ongi-text-secondary);
+  color: #fff;
   font: inherit;
 }
-
-.anonymous-sharing-cancel-confirm button.is-danger {
-  border-color: rgba(255, 99, 120, 0.38);
-  background: rgba(255, 99, 120, 0.14);
-  color: #ffd8de;
-  font-weight: 700;
-}
+.anonymous-sharing-exit-dialog button.is-danger { border-color: #ff637860; background: #ff637825; color: #ffd8de; }
+.anonymous-sharing-exit-dialog button:focus-visible { outline: 3px solid #78e2c6; outline-offset: 3px; }
 
 .anonymous-sharing-progress-summary {
   display: flex;

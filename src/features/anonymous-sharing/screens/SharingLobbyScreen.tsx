@@ -10,11 +10,9 @@ export function SharingLobbyScreen({
   setName,
   busy,
   setHostWriting,
-  cancelConfirming,
   setCancelConfirming,
   lockRoom,
   unlockRoom,
-  cancelRoom,
   joinAsHostParticipant,
   startSharing,
   editAnswers,
@@ -28,11 +26,9 @@ export function SharingLobbyScreen({
   | 'setName'
   | 'busy'
   | 'setHostWriting'
-  | 'cancelConfirming'
   | 'setCancelConfirming'
   | 'lockRoom'
   | 'unlockRoom'
-  | 'cancelRoom'
   | 'joinAsHostParticipant'
   | 'startSharing'
   | 'editAnswers'
@@ -151,24 +147,9 @@ export function SharingLobbyScreen({
       ) : null}
 
       <div className="anonymous-sharing-cancel-room">
-        {!cancelConfirming ? (
-          <button type="button" disabled={busy} onClick={() => setCancelConfirming(true)}>
-            방 없애기
-          </button>
-        ) : (
-          <div className="anonymous-sharing-cancel-confirm" role="alert">
-            <strong>정말 이 방을 없앨까요?</strong>
-            <p>참여자 이름과 작성 중인 답변까지 즉시 삭제되며 다시 복구할 수 없어요.</p>
-            <div>
-              <button type="button" disabled={busy} onClick={() => setCancelConfirming(false)}>
-                계속 사용하기
-              </button>
-              <button className="is-danger" type="button" disabled={busy} onClick={cancelRoom}>
-                {busy ? '삭제하는 중…' : '방 없애기'}
-              </button>
-            </div>
-          </div>
-        )}
+        <button type="button" disabled={busy} onClick={() => setCancelConfirming(true)}>
+          방 없애기
+        </button>
       </div>
     </section>
   );

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnonymousSharingApp } from '../src/features/anonymous-sharing/AnonymousSharingApp';
@@ -22,11 +22,14 @@ describe('익명 자기소개 나눔', () => {
     window.sessionStorage.clear();
     window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
     vi.stubGlobal('EventSource', undefined);
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function (this: HTMLDialogElement) { this.setAttribute('open', ''); } });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function (this: HTMLDialogElement) { this.removeAttribute('open'); } });
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('QR 링크로 참여하고 질문을 한 단계씩 저장한 뒤 대기 화면으로 이동한다', async () => {
@@ -301,7 +304,9 @@ describe('익명 자기소개 나눔', () => {
 
     expect(screen.getByText('정말 이 방을 없앨까요?')).toBeTruthy();
     expect(cancelCalls).toBe(0);
-    fireEvent.click(screen.getByRole('button', { name: '방 없애기' }));
+    const dialog = screen.getByRole('dialog', { name: '정말 이 방을 없앨까요?' });
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '계속 사용하기' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '방 없애기' }));
 
     expect(await screen.findByRole('button', { name: '진행자로 모임 만들기' })).toBeTruthy();
     expect(cancelCalls).toBe(1);

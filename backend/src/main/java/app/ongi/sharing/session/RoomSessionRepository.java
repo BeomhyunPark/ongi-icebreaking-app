@@ -15,6 +15,8 @@ public interface RoomSessionRepository extends JpaRepository<RoomSession, UUID> 
     @EntityGraph(attributePaths = {"room", "participant"})
     Optional<RoomSession> findByTokenHashAndRoomPublicId(String tokenHash, UUID publicRoomId);
 
+    void deleteAllByRoomIdAndParticipantId(UUID roomId, UUID participantId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update RoomSession session
