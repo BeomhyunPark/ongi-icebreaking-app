@@ -28,6 +28,10 @@ export function useAnonymousSharingController(onBackHome: () => void) {
   const [entryMode, setEntryMode] = useState<EntryMode>(initialHash.joinCode ? 'JOIN' : 'HOME');
   const [title, setTitle] = useState('');
   const [roomCode, setRoomCode] = useState(initialHash.joinCode ?? '');
+  const acceptJoinCode = useCallback((code: string) => {
+    setRoomCode(code);
+    replaceSharingHash('join', code);
+  }, []);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -251,6 +255,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
 
   return {
     initialHash,
+    acceptJoinCode,
     entryMode,
     setEntryMode,
     roomId,

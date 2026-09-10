@@ -3,10 +3,11 @@ import type { AnonymousSharingController } from '../hooks/useAnonymousSharingCon
 import { useEffect, useRef } from 'react';
 import { ScreenLayout } from '../../../components/ScreenLayout';
 import { SharingHeader } from '../components/SharingHeader';
+import { JoinQrScanner } from '../components/JoinQrScanner';
 import { HowToPlay } from '../components/HowToPlay';
 
 export function SharingEntryScreen({
-  initialHash,
+  acceptJoinCode,
   entryMode,
   setEntryMode,
   title,
@@ -21,7 +22,7 @@ export function SharingEntryScreen({
   joinRoom,
 }: Pick<
   AnonymousSharingController,
-  | 'initialHash'
+  | 'acceptJoinCode'
   | 'entryMode'
   | 'setEntryMode'
   | 'title'
@@ -105,17 +106,14 @@ export function SharingEntryScreen({
           <h2 ref={entryHeading} id="join-room-title" tabIndex={-1}>
             모임 참여하기
           </h2>
-          {!initialHash.joinCode ? (
-            <p className="anonymous-sharing-help">
-              휴대폰 카메라로 진행자의 QR을 스캔해주세요.
-              <br />
-              이름만 입력하면 모임에 참여할 수 있어요.
-            </p>
+          {!roomCode ? (
+            <JoinQrScanner onJoinCode={acceptJoinCode} />
           ) : (
             <>
               <label htmlFor="sharing-name">이름</label>
               <input
                 id="sharing-name"
+                autoFocus
                 value={name}
                 maxLength={40}
                 autoComplete="name"

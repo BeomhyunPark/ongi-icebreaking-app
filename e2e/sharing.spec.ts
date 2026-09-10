@@ -41,11 +41,38 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
     await expect(page.getByRole('img', { name: '모임 참여 QR 코드' })).toBeVisible();
     await expect(page.locator('.anonymous-sharing-room-code')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '초대 링크 공유' })).toHaveCount(0);
+    const qrSvg = await page.locator('.anonymous-sharing-qr svg').evaluate((svg) => new XMLSerializer().serializeToString(svg));
     await page.getByLabel('내 이름', { exact: true }).fill('진행자');
     await page.getByRole('button', { name: '나도 참여하기', exact: true }).click();
     await Promise.all(
       pages.slice(1).map(async (peer, index) => {
-        await peer.goto(`/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`);
+        if (index === 0) {
+          // Feed the host's actual QR into a camera stream; exercise the real decoder.
+          await peer.addInitScript((svg) => {
+            Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { value: async () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = canvas.height = 480;
+              const image = new Image();
+              image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+              await image.decode();
+              const context = canvas.getContext('2d')!;
+              context.fillStyle = 'white';
+              context.fillRect(0, 0, 480, 480);
+              context.drawImage(image, 40, 40, 400, 400);
+              const stream = canvas.captureStream(5);
+              (window as Window & { cameraStream?: MediaStream }).cameraStream = stream;
+              return stream;
+            } });
+          }, qrSvg);
+          await openActivity(peer, 'anonymous-sharing');
+          await peer.getByRole('button', { name: '모임 참여하기', exact: true }).click();
+          await expect(peer.getByLabel('이름', { exact: true })).toBeVisible();
+          expect(await peer.evaluate(() =>
+            (window as Window & { cameraStream?: MediaStream }).cameraStream?.getTracks().every((track) => track.readyState === 'ended'),
+          )).toBe(true);
+        } else {
+          await peer.goto(`/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`);
+        }
         await expect(peer.getByRole('textbox')).toHaveCount(1);
         await peer.getByLabel('이름', { exact: true }).fill(`참여자${index + 1}`);
         await peer.getByRole('button', { name: '참여하기', exact: true }).click();

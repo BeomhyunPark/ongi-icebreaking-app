@@ -724,3 +724,15 @@
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+
+.anonymous-sharing-scanner video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid var(--sharing-mint);
+  border-radius: 1rem;
+  background: #071424;
+}
+
+.anonymous-sharing-scanner video[hidden] { display: none; }

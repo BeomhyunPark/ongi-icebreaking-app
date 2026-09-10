@@ -102,13 +102,13 @@ describe('익명 자기소개 나눔', () => {
     });
   });
 
-  it('일반 진입은 참여 버튼을 강조하고 QR 스캔을 안내한다', () => {
+  it('일반 진입은 참여 버튼을 강조하고 카메라 미지원 시 대안을 안내한다', () => {
     window.history.replaceState({}, '', '/?activity=anonymous-sharing');
     render(<AnonymousSharingApp onBackHome={vi.fn()} />);
     expect(screen.getByRole('button', { name: '모임 참여하기' }).className).toContain('primary-button');
     expect(screen.getByRole('button', { name: '진행자로 모임 만들기' }).className).not.toContain('primary-button');
     fireEvent.click(screen.getByRole('button', { name: '모임 참여하기' }));
-    expect(screen.getByText(/휴대폰 카메라로 진행자의 QR/)).toBeTruthy();
+    expect(screen.getByRole('alert')).toBeTruthy();
     expect(screen.queryByRole('textbox')).toBeNull();
     expect(screen.queryByRole('button', { name: '참여하기' })).toBeNull();
   });

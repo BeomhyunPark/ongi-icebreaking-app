@@ -15,11 +15,21 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.4.0',
+    date: '2026.09.10',
+    title: '카메라로 바로 모임 참여',
+    summary: '모임 참여하기를 누르면 카메라로 QR을 찍고 바로 참여할 수 있어요.',
+    current: true,
+    changes: [
+      { title: '앱 안에서 QR 스캔', description: '참여 버튼에서 카메라를 열고, 모임 QR을 인식하면 이름 입력으로 이어져요.' },
+      { title: '카메라 사용 안내', description: '권한이 없거나 카메라를 사용할 수 없을 때 다시 시도하는 방법을 안내해요.' },
+    ],
+  },
+  {
     version: 'v2.3.3',
     date: '2026.09.10',
     title: 'QR로 간편하게 모임 참여',
     summary: 'QR을 스캔하고 이름만 입력해 모임에 참여해요.',
-    current: true,
     changes: [
       { title: '참여 중심의 시작 화면', description: '모임 참여 버튼을 먼저 강조하고, 진행자의 모임 만들기는 보조 버튼으로 구분했어요.' },
       { title: 'QR로 초대하기', description: '참여 코드와 링크 공유 버튼을 없애고 QR로 초대하도록 정리했어요.' },
