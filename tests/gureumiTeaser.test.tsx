@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,18 +35,22 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('구르미 테스트 Beta', () => {
-  it('홈에서 Beta 인트로로 진입하고 비공식 놀이형 콘텐츠임을 고지한다', async () => {
+describe('구르미 테스트', () => {
+  it('홈에서 인트로로 진입하고 비공식 놀이형 콘텐츠임을 고지한다', async () => {
     await preloadActivity('gureumi');
     const { container } = render(<App />);
-    const betaButton = screen.getByRole('button', { name: '구르미 Beta 테스트 시작하기' });
+    const testSection = screen.getByRole('region', { name: '나를 알아보는 테스트' });
+    const gureumiButton = within(testSection).getByRole('button', { name: '구르미 테스트' });
 
-    expect(betaButton.classList.contains('gureumi-home-teaser')).toBe(true);
-    fireEvent.click(betaButton);
+    expect(within(testSection).getByRole('button', { name: '마음속 흔적 찾기' })).toBeTruthy();
+    expect(within(testSection).queryByRole('button', { name: '극과 극 밸런스 게임' })).toBeNull();
+    fireEvent.click(gureumiButton);
 
-    expect(await screen.findByRole('heading', { name: /구르미 테스트에/, level: 1 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: /나는 어떤 구르미일까/, level: 1 })).toBeTruthy();
     expect(window.location.search).toBe('?activity=gureumi');
-    expect(screen.getByText(/정식 TCI 검사 또는 심리학적 진단·평가 도구가 아닙니다/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '테스트 시작하기' })).toBeTruthy();
+    expect(screen.queryByText(/BETA|Beta|약 4~5분/)).toBeNull();
+    expect(screen.getByText(/정식 TCI 검사나 심리 진단이 아닙니다/)).toBeTruthy();
     expect((await axe.run(container, {
       rules: { 'color-contrast': { enabled: false } },
     })).violations).toEqual([]);
@@ -100,7 +104,7 @@ describe('구르미 테스트 Beta', () => {
     window.history.replaceState({}, '', '/?activity=gureumi');
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Beta 테스트 시작하기' }));
+    fireEvent.click(await screen.findByRole('button', { name: '테스트 시작하기' }));
     expect(await screen.findByText('1번 상황')).toBeTruthy();
     expect(screen.getByText('1번 A 문장')).toBeTruthy();
     expect(screen.queryByText(/NOVELTY|highSide|resultType/)).toBeNull();
@@ -168,7 +172,7 @@ describe('구르미 테스트 Beta', () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       if (String(input).endsWith('/result')) return json({
         attemptId: ATTEMPT_ID, version: 'GUREUMI_BETA_V01', resultType: 'SUNNY',
-        characterKey: 'sunny', displayName: '쨍이', axes: [],
+        characterKey: 'sunny', displayName: '쨍이', axes: [], feedbackRating: 4,
       });
       return json({
       attemptId: ATTEMPT_ID,
@@ -190,6 +194,9 @@ describe('구르미 테스트 Beta', () => {
     expect(await screen.findByRole('heading', { name: '쨍이', level: 1 })).toBeTruthy();
     expect(window.localStorage.getItem('ongi_gureumi_attempt_v01')).not.toBeNull();
     expect(fetchMock.mock.calls.some(([input]) => String(input).endsWith('/result'))).toBe(true);
+    expect(screen.queryByRole('button', { name: /피드백|의견|설문/ })).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/feedback'))).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: '← 홈' }));
     expect(await screen.findByRole('heading', { name: '우리 사이에 온기를' })).toBeTruthy();
   });

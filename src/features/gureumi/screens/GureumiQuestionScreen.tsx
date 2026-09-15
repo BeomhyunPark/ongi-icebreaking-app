@@ -48,7 +48,7 @@ export function GureumiQuestionScreen({
     <main className="gureumi-screen gureumi-questions">
       <header className="gureumi-question-header">
         <button type="button" onClick={onBackHome} aria-label="홈으로 돌아가기">←</button>
-        <span className="gureumi-question-header__brand">☁ <b>BETA v0.1</b></span>
+        <span className="gureumi-question-header__brand">☁ <b>구르미 테스트</b></span>
         <strong>{pageStart}–{pageEnd} / {GUREUMI_QUESTION_COUNT}</strong>
       </header>
       <div

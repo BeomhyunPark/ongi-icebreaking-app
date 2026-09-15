@@ -136,7 +136,7 @@ async function shareWithDevice(
   payload: KakaoSharePayload,
   testUrl: string,
 ): Promise<GureumiShareResult> {
-  const text = `나는 ${payload.name}!\n${payload.descriptor.replaceAll('\n', ' ')}\n\n나도 테스트하러 가기\n${testUrl}`;
+  const text = `나는 ${payload.name}!\n${payload.descriptor.replaceAll('\n', ' ')}\n\n테스트하러 가기\n${testUrl}`;
 
   if (typeof navigator.share === 'function') {
     try {
@@ -166,7 +166,7 @@ function getKakaoShareSettings(payload: KakaoSharePayload, testUrl: string): Kak
       link: { mobileWebUrl: testUrl, webUrl: testUrl },
     },
     buttons: [{
-      title: '나도 테스트하러 가기',
+      title: '테스트하러 가기',
       link: { mobileWebUrl: testUrl, webUrl: testUrl },
     }],
   };

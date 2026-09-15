@@ -6,8 +6,6 @@ import {
   GUREUMI_PAGE_SIZE,
   type GureumiAttemptReference,
   type GureumiAttemptState,
-  type GureumiFollowUpFeedback,
-  type GureumiQuickFeedback,
 } from '../domain/types';
 import {
   clearGureumiAttempt,
@@ -143,22 +141,6 @@ export function useGureumiController() {
       if (active()) dispatch({ type: 'RESULT', reference: state.reference, result });
     });
   };
-  const handleOpenFeedback = () =>
-    run('feedback', async (active) => {
-      if (!reference) return;
-      const response = questions.length
-        ? { questions }
-        : await gureumiApi.getQuestions(reference.attemptId, reference.resumeToken);
-      if (active()) dispatch({ type: 'FEEDBACK', questions: response.questions });
-    });
-  const handleSaveQuickFeedback = async (feedback: GureumiQuickFeedback) => {
-    if (!reference) throw new Error('GUREUMI_ATTEMPT_NOT_FOUND');
-    await gureumiApi.saveFeedback(reference.attemptId, reference.resumeToken, feedback);
-  };
-  const handleSaveFollowUpFeedback = async (feedback: GureumiFollowUpFeedback) => {
-    if (!reference) throw new Error('GUREUMI_ATTEMPT_NOT_FOUND');
-    await gureumiApi.saveFollowUpFeedback(reference.attemptId, reference.resumeToken, feedback);
-  };
   return {
     ...state,
     ...answerState,
@@ -167,9 +149,6 @@ export function useGureumiController() {
     completing: state.operation === 'complete',
     handleNext,
     handleResume,
-    handleOpenFeedback,
-    handleSaveQuickFeedback,
-    handleSaveFollowUpFeedback,
     createAndOpen,
     handleStartFresh: () => {
       void createAndOpen();
@@ -180,6 +159,5 @@ export function useGureumiController() {
     previousPage: () => {
       if (!pending.current) dispatch({ type: 'PAGE', direction: -1 });
     },
-    backToResult: () => dispatch({ type: 'BACK_TO_RESULT' }),
   };
 }

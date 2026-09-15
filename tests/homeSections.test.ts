@@ -11,7 +11,7 @@ describe('home category metadata', () => {
         const visible = [
           ...sections.tools,
           ...sections.others,
-          ...sections.previews,
+          ...sections.tests,
           ...(sections.showFeatured ? [featured] : []),
         ];
         expect(visible.map(({ id }) => id).sort()).toEqual(
@@ -22,10 +22,18 @@ describe('home category metadata', () => {
       }
     },
   );
+  it('keeps both self-understanding tests together and games separate for every featured card', () => {
+    for (const featured of ACTIVITIES) {
+      const sections = selectHomeSections(ACTIVITIES, featured, 'all');
+      expect(sections.tests.map(({ id }) => id)).toEqual(['heart-trace', 'gureumi']);
+      expect(sections.others.every(({ intent }) => intent === 'play')).toBe(true);
+      if (featured.intent === 'test') expect(sections.showFeatured).toBe(false);
+    }
+  });
   it('uses metadata instead of recognizing an activity ID', () => {
     const activities = ACTIVITIES.map((activity) => ({ ...activity, intent: 'test' as const }));
     const sections = selectHomeSections(activities, null, 'test');
-    expect([...sections.tools, ...sections.others, ...sections.previews]).toHaveLength(
+    expect([...sections.tools, ...sections.others, ...sections.tests]).toHaveLength(
       activities.length,
     );
     expect(selectHomeSections(activities, null, 'play').others).toEqual([]);

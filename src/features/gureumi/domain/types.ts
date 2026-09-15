@@ -67,24 +67,6 @@ export type GureumiResult = {
   feedbackRating?: number;
 };
 
-export type GureumiQuickFeedback = {
-  rating?: number;
-  confusingQuestionOrders: number[];
-  selfSelectedResultType: GureumiResultType;
-};
-
-export type GureumiFollowUpFeedback = {
-  flowRating?: number;
-  questionUiRating?: number;
-  resultHelpfulnessRating?: number;
-  helpfulSections: string[];
-  resultIssues: string[];
-  shareIntent?: string;
-  errorAreas: string[];
-  environment?: string;
-  comment?: string;
-};
-
 export type GureumiAttemptReference = {
   attemptId: string;
   resumeToken: string;

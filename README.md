@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://ongi.greengroove.app/"><strong>온기 시작하기 →</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://ongi.greengroove.app/?activity=gureumi">구르미 Beta 테스트</a>
+  <a href="https://ongi.greengroove.app/?activity=gureumi">구르미 테스트</a>
 </p>
 
 ---
@@ -43,16 +43,16 @@
 
 각 놀이나 도구는 링크로 바로 나눌 수 있고, 결과도 이미지로 저장하거나 공유할 수 있어요.
 
-## 그리고, 다음 이야기
+## 두 번째 테스트, 구르미
 
 <p align="center">
   <a href="https://ongi.greengroove.app/?activity=gureumi">
-    <img src="./public/images/teasers/gureumi-test/teaser.png" alt="구르미 테스트 — 서로 다른 여덟 친구를 만나는 Beta 테스트" width="280" />
+    <img src="./public/images/teasers/gureumi-test/sunny.png" alt="구르미 테스트의 쨍이 캐릭터" width="280" />
   </a>
 </p>
 
 <p align="center">
-  <strong>두 번째 기질 테스트, 구르미 테스트 Beta v0.1</strong><br />
+  <strong>지금 만나는 구르미 테스트</strong><br />
   27개의 선택을 따라가며 나와 닮은 구르미를 만나보세요.
 </p>
 

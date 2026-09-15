@@ -27,6 +27,11 @@ describe('놀이별 공유 메타데이터', () => {
     expect(getActivityDestination(sharing!.target)).toBe('?tool=sharing');
     expect(getActivityDestination({ id: 'heart-trace' })).toBe('?activity=heart-trace');
     expect(getShareTarget({ id: 'gureumi' })?.slug).toBe('gureumi');
+    expect(getShareTarget({ id: 'gureumi' })).toMatchObject({
+      label: '구르미 테스트',
+      title: '나는 어떤 구르미일까? | 온기',
+      description: '27개의 선택으로 만나는 나의 구르미. 서로 다른 반응을 가볍게 알아보세요.',
+    });
     expect(getActivityDestination({ id: 'gureumi' })).toBe('?activity=gureumi');
 
     const dessert = getShareTarget({

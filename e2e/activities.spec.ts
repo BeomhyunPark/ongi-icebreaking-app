@@ -17,9 +17,13 @@ test('built app, release history, and service worker agree on version', async ({
 
 test('home filters and narrow layouts', async ({ page }) => {
   await openActivity(page);
+  const testSection = page.getByRole('region', { name: '나를 알아보는 테스트' });
+  await expect(testSection.getByRole('button', { name: '마음속 흔적 찾기', exact: true })).toBeVisible();
+  await expect(testSection.getByRole('button', { name: '구르미 테스트', exact: true })).toBeVisible();
+  await expect(testSection.getByRole('button', { name: '극과 극 밸런스 게임', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '혼자 테스트', exact: true }).click();
   await expect(page.getByRole('button', { name: '마음속 흔적 찾기', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '구르미 Beta 테스트 시작하기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '구르미 테스트', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '오늘은 누구?', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '함께 놀기', exact: true }).click();
   await expect(

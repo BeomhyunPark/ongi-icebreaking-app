@@ -43,10 +43,8 @@ const opened = () =>
   });
 
 describe('Gureumi phase transitions', () => {
-  it('rejects feedback/result without a completed attempt and rejects duplicate starts', () => {
+  it('rejects result without a completed attempt and rejects duplicate starts', () => {
     const state = intro();
-    expect(reduce(state, { type: 'BACK_TO_RESULT' })).toBe(state);
-    expect(reduce(state, { type: 'FEEDBACK', questions })).toBe(state);
     expect(reduce(state, { type: 'RESULT', reference, result })).toBe(state);
     const starting = reduce(state, { type: 'BEGIN', operation: 'start' });
     expect(reduce(starting, { type: 'BEGIN', operation: 'start' })).toBe(starting);
@@ -59,7 +57,7 @@ describe('Gureumi phase transitions', () => {
     const completing = reduce(state, { type: 'BEGIN', operation: 'complete' });
     expect(reduce(completing, { type: 'PAGE', direction: -1 })).toBe(completing);
   });
-  it('opens result and feedback atomically and preserves result when retest fails', () => {
+  it('opens result atomically and preserves result when retest fails', () => {
     let state = reduce(reduce(opened(), { type: 'BEGIN', operation: 'complete' }), {
       type: 'RESULT',
       reference,
@@ -67,12 +65,6 @@ describe('Gureumi phase transitions', () => {
     });
     expect(state.phase).toBe('result');
     expect(state.resumeState).toBeNull();
-    state = reduce(reduce(state, { type: 'BEGIN', operation: 'feedback' }), {
-      type: 'FEEDBACK',
-      questions,
-    });
-    expect(state.phase).toBe('feedback');
-    state = reduce(state, { type: 'BACK_TO_RESULT' });
     state = reduce(reduce(state, { type: 'BEGIN', operation: 'start' }), {
       type: 'FAILED',
       error: 'offline',

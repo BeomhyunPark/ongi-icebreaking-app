@@ -15,11 +15,22 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.6.0',
+    date: '2026.09.15',
+    title: '구르미 테스트 정식 출시',
+    summary: '구르미 테스트를 정식 출시했어요.',
+    current: true,
+    changes: [
+      { title: '테스트끼리 한곳에', description: '홈에서 마음속 흔적 찾기와 구르미 테스트를 함께 볼 수 있어요.' },
+      { title: '간결한 구르미 결과', description: '공감도와 의견 설문을 없애고, 결과 공유·다른 구르미 보기·다시 테스트하기 버튼을 정리했어요.' },
+      { title: '구르미 안내 정리', description: '소개와 시작 버튼의 Beta 문구를 정리했어요. 문항과 채점 방식, 저장된 결과는 그대로예요.' },
+    ],
+  },
+  {
     version: 'v2.5.1',
     date: '2026.09.10',
     title: '이전 모임 안내 정리',
     summary: '로비로 돌아오면 이전 모임의 오류 안내가 남지 않아요.',
-    current: true,
     changes: [
       { title: '안내 초기화', description: '방 삭제 안내를 확인한 뒤 로비로 돌아가거나 다른 입장 화면으로 이동하면 이전 오류와 참여 정보를 정리해요.' },
     ],

@@ -38,7 +38,7 @@ export function pickFeaturedActivity(
   random = Math.random,
 ): Activity | null {
   const playActivities = activities.filter(
-    (activity) => activity.available && activity.group === 'play',
+    (activity) => activity.available && activity.group === 'play' && activity.intent === 'play',
   );
   const newActivities = playActivities.filter((activity) => activity.badge === 'NEW');
   const candidates =
@@ -65,7 +65,7 @@ export function HomeScreen({
   const {
     tools: communityTools,
     others: otherPlayActivities,
-    previews,
+    tests: personalityTests,
     showFeatured,
   } = selectHomeSections(ACTIVITIES, featuredActivity, intent);
 
@@ -227,20 +227,25 @@ export function HomeScreen({
         </section>
       ) : null}
 
-      {otherPlayActivities.length > 0 ? (
-        <section className="home-section home-section--upcoming" aria-labelledby="more-title">
+      {[
+        { id: 'more', title: '다른 놀거리', description: '취향대로 골라봐요', number: '03', activities: otherPlayActivities },
+        { id: 'tests', title: '나를 알아보는 테스트', description: '서로 다른 마음을 만나봐요', number: '04', activities: personalityTests },
+      ].filter(({ activities }) => activities.length > 0).map((section) => (
+        <section className="home-section" aria-labelledby={`${section.id}-title`} key={section.id}>
           <div className="home-section__meta">
-            <p>취향대로 골라봐요</p>
-            <span aria-hidden="true">03</span>
+            <p>{section.description}</p>
+            <span aria-hidden="true">{section.number}</span>
           </div>
-          <h2 id="more-title">{intent === 'test' ? '성격 테스트' : '다른 놀거리'}</h2>
+          <h2 id={`${section.id}-title`}>{section.title}</h2>
 
           <div className="activity-grid">
-            {otherPlayActivities.map((activity) => {
+            {section.activities.map((activity) => {
               const content = (
                 <>
                   <span className="activity-card__mini-visual" aria-hidden="true">
-                    {ACTIVITY_MARKS[activity.id]}
+                    {activity.id === 'gureumi' ? (
+                      <img src={assetUrl('images/teasers/gureumi-test/sunny.png')} alt="" />
+                    ) : ACTIVITY_MARKS[activity.id]}
                   </span>
                   <span className="activity-card__compact-copy">
                     <span className="activity-card__topline">
@@ -281,38 +286,7 @@ export function HomeScreen({
             })}
           </div>
         </section>
-      ) : null}
-
-      {previews.length > 0 ? (
-        <section className="home-section home-section--preview" aria-labelledby="preview-title">
-          <div className="home-section__meta">
-            <p>먼저 경험해 주세요</p>
-            <span aria-hidden="true">04</span>
-          </div>
-          <h2 id="preview-title">Beta 테스트</h2>
-
-          <button
-            className="gureumi-home-teaser"
-            type="button"
-            aria-label="구르미 Beta 테스트 시작하기"
-            onClick={() => onSelectActivity('gureumi')}
-          >
-            <span className="gureumi-home-teaser__copy">
-              <small>GUREUMI · BETA v0.1</small>
-              <strong>구르미 테스트</strong>
-              <span>
-                27개의 선택을 따라가며
-                <br />
-                나와 닮은 구르미를 만나보세요.
-              </span>
-              <b>Beta 참여하기</b>
-            </span>
-            <span className="gureumi-home-teaser__preview" aria-hidden="true">
-              <img src={assetUrl('images/teasers/gureumi-test/teaser.png')} alt="" />
-            </span>
-          </button>
-        </section>
-      ) : null}
+      ))}
 
       <InstallAppPrompt />
 

@@ -127,7 +127,7 @@ describe('놀이와 도구 링크 공유', () => {
     expect(screen.queryByRole('button', { name: /링크 공유하기/ })).toBeNull();
   });
 
-  it('구르미 Beta에는 인트로 안의 전용 공유 버튼을 노출하고 공통 플로팅 버튼은 두지 않는다', async () => {
+  it('구르미에는 인트로 안의 전용 공유 버튼을 노출하고 공통 플로팅 버튼은 두지 않는다', async () => {
     const share = vi.fn(async () => undefined);
     Object.defineProperty(window.navigator, 'share', {
       configurable: true,
@@ -136,7 +136,7 @@ describe('놀이와 도구 링크 공유', () => {
     window.history.replaceState({}, '', '/?activity=gureumi-teaser');
     render(<App />);
 
-    await screen.findByRole('heading', { name: /구르미 테스트에/ });
+    await screen.findByRole('heading', { name: /나는 어떤 구르미일까/ });
     expect(screen.queryByRole('button', { name: /좋아요/ })).toBeNull();
     expect(document.querySelector('.activity-link-share')).toBeNull();
 

@@ -13,7 +13,7 @@ export type ActivityKind =
   | '토너먼트'
   | '모임 도구'
   | '소그룹 나눔';
-export type ActivityGroup = 'play' | 'community-tool' | 'teaser';
+export type ActivityGroup = 'play' | 'community-tool';
 export type ActivityIntent = 'test' | 'play' | 'tools';
 
 export type Activity = {
@@ -42,12 +42,11 @@ export const ACTIVITIES: readonly Activity[] = [
   {
     id: 'gureumi',
     intent: 'test',
-    group: 'teaser',
+    group: 'play',
     kind: '새로운 테스트',
     title: '구르미 테스트',
     description: '27개의 선택을 따라가며 나와 닮은 구르미를 만나보세요.',
-    meta: 'Beta v0.1 · 27문항 · 약 4~5분',
-    badge: 'BETA',
+    meta: '27문항',
     available: true,
   },
   {

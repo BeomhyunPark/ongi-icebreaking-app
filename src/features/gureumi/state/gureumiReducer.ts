@@ -9,7 +9,7 @@ import {
 type Fields = {
   questions: GureumiQuestion[];
   pageIndex: number;
-  operation: 'idle' | 'start' | 'resume' | 'complete' | 'feedback';
+  operation: 'idle' | 'start' | 'resume' | 'complete';
   error: string;
 };
 export type GureumiState = Fields &
@@ -27,7 +27,7 @@ export type GureumiState = Fields &
         result: null;
       }
     | {
-        phase: 'result' | 'feedback';
+        phase: 'result';
         reference: GureumiAttemptReference;
         resumeState: null;
         result: GureumiResult;
@@ -58,8 +58,6 @@ export type GureumiAction =
       questions: GureumiQuestion[];
     }
   | { type: 'RESULT'; reference: GureumiAttemptReference; result: GureumiResult }
-  | { type: 'FEEDBACK'; questions: GureumiQuestion[] }
-  | { type: 'BACK_TO_RESULT' }
   | { type: 'PAGE'; direction: -1 | 1 }
   | { type: 'FAILED'; error: string };
 
@@ -67,10 +65,9 @@ const OPERATION_PHASES: Record<
   Exclude<Fields['operation'], 'idle'>,
   readonly GureumiState['phase'][]
 > = {
-  start: ['intro', 'result', 'feedback'],
+  start: ['intro', 'result'],
   resume: ['intro'],
   complete: ['questions'],
-  feedback: ['result'],
 };
 
 export function gureumiReducer(state: GureumiState, action: GureumiAction): GureumiState {
@@ -123,13 +120,6 @@ export function gureumiReducer(state: GureumiState, action: GureumiAction): Gure
         operation: 'idle',
         error: '',
       };
-    case 'FEEDBACK':
-      if (state.phase !== 'result' || state.operation !== 'feedback') return state;
-      return { ...state, phase: 'feedback', questions: action.questions, operation: 'idle' };
-    case 'BACK_TO_RESULT':
-      return state.phase === 'feedback' && state.operation === 'idle'
-        ? { ...state, phase: 'result' }
-        : state;
     case 'PAGE':
       if (state.phase !== 'questions' || state.operation !== 'idle') return state;
       return {

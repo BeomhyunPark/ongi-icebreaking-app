@@ -58,16 +58,13 @@ export function GureumiIntroScreen({
         <button type="button" onClick={onBackHome}>
           <span aria-hidden="true">←</span> 홈
         </button>
-        <span>BETA v0.1</span>
+        <span>구르미 테스트</span>
       </nav>
 
       <article className="gureumi-intro__panel" aria-labelledby="gureumi-intro-title">
-        <div className="gureumi-intro__badge">BETA 1</div>
         <p className="gureumi-kicker">ONGI · GUREUMI TEST</p>
         <h1 id="gureumi-intro-title">
-          구르미 테스트에
-          <br />
-          오신 걸 환영해요
+          나는 어떤 구르미일까?
         </h1>
         <p className="gureumi-intro__lead">
           27개의 선택을 따라가며
@@ -80,8 +77,8 @@ export function GureumiIntroScreen({
           alt="환하게 웃는 구르미 쨍이"
         />
 
-        <section className="gureumi-intro__guide" aria-label="Beta 테스트 안내">
-          <strong>27문항 · 약 4~5분</strong>
+        <section className="gureumi-intro__guide" aria-label="구르미 테스트 안내">
+          <strong>27문항</strong>
           <p>
             답변은 익명으로 저장되고,
             <br />
@@ -112,7 +109,7 @@ export function GureumiIntroScreen({
             disabled={busy}
             onClick={onStart}
           >
-            {busy ? '준비하고 있어요…' : 'Beta 테스트 시작하기'}
+            {busy ? '준비하고 있어요…' : '테스트 시작하기'}
           </button>
         )}
         <button
@@ -148,8 +145,8 @@ export function GureumiIntroScreen({
           </p>
         ) : null}
         <p className="gureumi-intro__disclaimer">
-          이 테스트는 Cloninger의 기질 이론에서 논의된 일부 개념을 참고해 독자적으로 제작한 놀이형
-          자기이해 콘텐츠입니다. 정식 TCI 검사 또는 심리학적 진단·평가 도구가 아닙니다.
+          이 테스트는 Cloninger의 기질 이론에서 논의된 일부 개념을 참고해 독자적으로 제작했습니다.
+          놀이형 자기이해 콘텐츠이며, 정식 TCI 검사나 심리 진단이 아닙니다.
         </p>
       </article>
     </main>

@@ -14,7 +14,9 @@ export function selectHomeSections(
   intent: HomeIntent,
 ) {
   const matches = (activity: Activity) => intent === 'all' || activity.intent === intent;
-  const showFeatured = Boolean(featured && matches(featured));
+  const showFeatured = Boolean(
+    featured?.available && featured.group === 'play' && featured.intent === 'play' && matches(featured),
+  );
   return {
     showFeatured,
     tools: activities.filter(
@@ -23,11 +25,12 @@ export function selectHomeSections(
     others: activities.filter(
       (activity) =>
         activity.group === 'play' &&
+        activity.intent !== 'test' &&
         matches(activity) &&
         !(showFeatured && activity.id === featured?.id),
     ),
-    previews: activities.filter(
-      (activity) => activity.available && activity.group === 'teaser' && matches(activity),
+    tests: activities.filter(
+      (activity) => activity.group === 'play' && activity.intent === 'test' && matches(activity),
     ),
   };
 }

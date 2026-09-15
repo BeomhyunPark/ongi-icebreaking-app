@@ -1,6 +1,5 @@
 import { useGureumiController } from './hooks/useGureumiController';
 import { GureumiIntroScreen } from './screens/GureumiIntroScreen';
-import { GureumiFeedbackFlow } from './screens/GureumiFeedbackFlow';
 import { GureumiQuestionScreen } from './screens/GureumiQuestionScreen';
 import { GureumiResultScreen } from './screens/GureumiResultScreen';
 import { assetUrl } from '../../utils/assetUrl';
@@ -10,7 +9,6 @@ export function GureumiApp({ onBackHome }: { onBackHome: () => void }) {
   const {
     phase,
     result,
-    questions,
     currentQuestions,
     answers,
     pendingQuestionIds,
@@ -22,15 +20,11 @@ export function GureumiApp({ onBackHome }: { onBackHome: () => void }) {
     reference,
     handleAnswer,
     handleNext,
-    handleOpenFeedback,
     handleRetest,
-    handleSaveQuickFeedback,
-    handleSaveFollowUpFeedback,
     handleResume,
     handleStartFresh,
     createAndOpen,
     previousPage,
-    backToResult,
   } = useGureumiController();
 
   if (phase === 'booting') {
@@ -64,27 +58,10 @@ export function GureumiApp({ onBackHome }: { onBackHome: () => void }) {
     return (
       <GureumiResultScreen
         result={result}
-        feedbackOpening={busy}
         retestStarting={busy}
         actionError={error}
-        onOpenFeedback={() => void handleOpenFeedback()}
         onRetest={handleRetest}
         onBackHome={onBackHome}
-      />
-    );
-  }
-
-  if (phase === 'feedback' && result) {
-    return (
-      <GureumiFeedbackFlow
-        retestStarting={busy}
-        actionError={error}
-        result={result}
-        questions={questions}
-        onSaveQuick={handleSaveQuickFeedback}
-        onSaveFollowUp={handleSaveFollowUpFeedback}
-        onBackResult={backToResult}
-        onRetest={handleRetest}
       />
     );
   }

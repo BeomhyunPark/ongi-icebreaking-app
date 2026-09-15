@@ -12,10 +12,8 @@ import { bindGureumiKakaoShareButton, shareGureumiResult } from '../services/kak
 
 type GureumiResultScreenProps = {
   result: GureumiResult;
-  feedbackOpening?: boolean;
   retestStarting?: boolean;
   actionError?: string;
-  onOpenFeedback?: () => void;
   onRetest?: () => void;
   onBackHome?: () => void;
 };
@@ -53,10 +51,8 @@ const AXIS_COPY = {
 
 export function GureumiResultScreen({
   result,
-  feedbackOpening = false,
   retestStarting = false,
   actionError = '',
-  onOpenFeedback,
   onRetest,
   onBackHome,
 }: GureumiResultScreenProps) {
@@ -266,25 +262,19 @@ export function GureumiResultScreen({
             {kakaoButtonMode === 'loading' || sharingResult ? '공유 화면 준비 중…' : '카카오톡으로 결과 공유하기'}
           </button>
           {saveMessage ? <p aria-live="polite">{saveMessage}</p> : null}
-          <button className="gureumi-result__all-button" type="button" onClick={() => setShowAllTypes((value) => !value)}>
-            {showAllTypes ? '8가지 구르미 접기' : '8가지 구르미 모두 보기 →'}
-          </button>
-          <p className="gureumi-result__legal">이 결과는 놀이형 자기이해 콘텐츠이며,<br />전문적인 심리검사나 진단을 대신하지 않습니다.</p>
+          <div className="gureumi-result__secondary-actions">
+            <button className="gureumi-result__all-button" type="button" onClick={() => setShowAllTypes((value) => !value)}>
+              {showAllTypes ? '8가지 구르미 접기' : '8가지 구르미 모두 보기 →'}
+            </button>
+            {onRetest ? (
+              <button className="gureumi-result__retest-button" type="button" disabled={retestStarting} onClick={onRetest}>
+                <span aria-hidden="true">↻</span>
+                {retestStarting ? '새 테스트를 준비하고 있어요…' : '다시 테스트하기'}
+              </button>
+            ) : null}
+          </div>
+          <p className="gureumi-result__legal">놀이형 자기이해 콘텐츠이며,<br />정식 TCI 검사나 심리 진단이 아닙니다.</p>
         </footer>
-
-        {onOpenFeedback && onRetest ? (
-          <section className="gureumi-result__feedback-handoff" aria-labelledby="gureumi-feedback-title">
-            <small>BETA 1 · 결과를 확인했다면</small>
-            <h2 id="gureumi-feedback-title">이 결과가 나와 얼마나 닮았는지 알려주세요</h2>
-            <p>헷갈린 문항과 더 가까운 구르미도<br />내용을 다시 보며 선택할 수 있어요.</p>
-            <button type="button" disabled={feedbackOpening} onClick={onOpenFeedback}>
-              {feedbackOpening ? '피드백을 준비하고 있어요…' : '피드백 남기기'}
-            </button>
-            <button type="button" disabled={retestStarting} onClick={onRetest}>
-              {retestStarting ? '새 테스트를 준비하고 있어요…' : '다시 테스트하기'}
-            </button>
-          </section>
-        ) : null}
       </article>
 
       {showIosHelp ? (

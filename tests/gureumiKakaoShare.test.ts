@@ -33,7 +33,7 @@ describe('구르미 카카오톡 공유', () => {
         imageUrl: expect.stringContaining('/images/results/gureumi/arong-story.png'),
       }),
       buttons: [{
-        title: '나도 테스트하러 가기',
+        title: '테스트하러 가기',
         link: expect.objectContaining({ mobileWebUrl: expect.stringContaining('/share/gureumi/') }),
       }],
     }));
@@ -65,7 +65,7 @@ describe('구르미 카카오톡 공유', () => {
         imageUrl: expect.stringContaining('/images/results/gureumi/arong-story.png'),
       }),
       buttons: [{
-        title: '나도 테스트하러 가기',
+        title: '테스트하러 가기',
         link: expect.objectContaining({ mobileWebUrl: expect.stringContaining('/share/gureumi/') }),
       }],
     }));
