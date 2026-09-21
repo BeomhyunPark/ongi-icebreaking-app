@@ -402,34 +402,36 @@ class RoomParticipantIntegrationTest {
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.code", is("STATE_CHANGED")));
 
-        Cookie secondAuthor = canReveal(roomId, one) ? one : two;
-        MvcResult secondReveal = mockMvc.perform(post("/api/rooms/{roomId}/sharing/reveal", roomId)
-                .cookie(secondAuthor)
-                .header("X-OnGi-Client", "web"))
-            .andExpect(status().isOk())
-            .andReturn();
-        long secondVersion = objectMapper.readTree(secondReveal.getResponse().getContentAsString()).path("roomVersion").asLong();
-        MvcResult finished = next(roomId, host, secondVersion, 1)
+        long secondVersion = objectMapper.readTree(next.getResponse().getContentAsString()).path("roomVersion").asLong();
+        MvcResult finished = mockMvc.perform(post("/api/rooms/{roomId}/skip", roomId)
+                .cookie(host)
+                .header("X-OnGi-Client", "web")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedVersion\":" + secondVersion + ",\"expectedRound\":1}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.state", is("FINISHED")))
             .andReturn();
         long finishedVersion = objectMapper.readTree(finished.getResponse().getContentAsString()).path("roomVersion").asLong();
 
-        mockMvc.perform(post("/api/rooms/{roomId}/complete", roomId)
+        MvcResult completed = mockMvc.perform(post("/api/rooms/{roomId}/complete", roomId)
                 .cookie(host)
                 .header("X-OnGi-Client", "web")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"expectedVersion\":" + finishedVersion + "}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status", is("COMPLETED")));
+            .andExpect(jsonPath("$.status", is("COMPLETED")))
+            .andReturn();
 
+        org.assertj.core.api.Assertions.assertThat(completed.getResponse().getHeaders("Set-Cookie"))
+            .hasSize(2)
+            .allMatch(header -> header.contains("Max-Age=0"));
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM participants", Integer.class)).isZero();
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM responses", Integer.class)).isZero();
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM sharing_rounds", Integer.class)).isZero();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM room_sessions", Integer.class)).isZero();
 
         mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).cookie(one))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status", is("COMPLETED")));
+            .andExpect(status().isUnauthorized());
 
         join(code, "늦은 참여자")
             .andExpect(status().isNotFound())

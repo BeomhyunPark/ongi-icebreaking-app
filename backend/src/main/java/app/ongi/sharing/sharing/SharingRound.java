@@ -68,6 +68,14 @@ public class SharingRound {
         completedAt = now;
     }
 
+    public void skip(Instant now) {
+        if (status != SharingStatus.ANONYMOUS) {
+            throw new StateTransitionException(Reason.ROUND_CHANGED);
+        }
+        status = SharingStatus.COMPLETED;
+        completedAt = now;
+    }
+
     public UUID getId() { return id; }
     public Room getRoom() { return room; }
     public Participant getParticipant() { return participant; }

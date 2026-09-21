@@ -29,6 +29,7 @@ import { ActivityShareButton } from '../components/ActivityShareButton';
 import { UpdatesScreen } from '../features/updates/UpdatesScreen';
 import { getEngagementContentCode } from '../engagement/contentCodes';
 import { initializeEngagement, trackContentView } from '../engagement/tracker';
+import { loadRoomReference } from '../features/anonymous-sharing/services/roomReference';
 
 const GureumiStatisticsApp = lazy(async () => {
   const module = await import('../features/gureumi-statistics/GureumiStatisticsApp');
@@ -260,6 +261,7 @@ export function App() {
       ) : (
         <HomeScreen
           featuredActivityId={featuredActivityId}
+          hasActiveSharingRoom={Boolean(loadRoomReference())}
           onOpenUpdates={openUpdates}
           onSelectActivity={selectActivity}
         />

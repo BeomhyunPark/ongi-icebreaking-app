@@ -9,12 +9,14 @@ export function SharingStoryScreen({
   busy,
   reveal,
   nextStory,
+  skipStory,
   completeRoom,
-}: Pick<AnonymousSharingController, 'busy' | 'reveal' | 'nextStory' | 'completeRoom'> & {
+}: Pick<AnonymousSharingController, 'busy' | 'reveal' | 'nextStory' | 'skipStory' | 'completeRoom'> & {
   roomState: RoomState;
   sharing: CurrentSharing;
 }) {
   const [revealConfirming, setRevealConfirming] = useState(false);
+  const [skipConfirming, setSkipConfirming] = useState(false);
   const storyTop = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (sharing) {
@@ -121,6 +123,28 @@ export function SharingStoryScreen({
             <PrimaryButton disabled={busy} onClick={nextStory}>
               {sharing.sequence === sharing.total - 1 ? '나눔 끝내기' : '다음 이야기'}
             </PrimaryButton>
+          ) : null}
+          {roomState.role === 'HOST' && sharing.state === 'ANONYMOUS' ? (
+            <div className="anonymous-sharing-skip">
+              {!skipConfirming ? (
+                <button type="button" disabled={busy} onClick={() => setSkipConfirming(true)}>
+                  작성자가 자리를 비웠어요
+                </button>
+              ) : (
+                <div className="anonymous-sharing-reveal-confirm" role="alert">
+                  <strong>이번 이야기를 건너뛸까요?</strong>
+                  <p>작성자가 돌아오지 못할 때만 사용해주세요. 이 이야기의 이름은 공개되지 않아요.</p>
+                  <div>
+                    <button type="button" disabled={busy} onClick={() => setSkipConfirming(false)}>
+                      아니요
+                    </button>
+                    <PrimaryButton disabled={busy} onClick={skipStory}>
+                      건너뛰고 계속하기
+                    </PrimaryButton>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : null}
           {sharing.state === 'ANONYMOUS' ? (
             <p className="anonymous-sharing-help">작성자가 준비되면 직접 자신을 공개해요.</p>

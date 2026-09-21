@@ -535,6 +535,23 @@
   font-size: 0.8125rem;
 }
 
+.anonymous-sharing-skip {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.anonymous-sharing-skip > button {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  background: transparent;
+  color: var(--ongi-text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
 .anonymous-sharing-reveal-confirm {
   padding: 1rem;
   border: 1px solid rgba(255, 174, 139, 0.3);

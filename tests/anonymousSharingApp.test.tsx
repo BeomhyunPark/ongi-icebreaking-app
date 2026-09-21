@@ -33,6 +33,7 @@ describe('익명 자기소개 나눔', () => {
   });
 
   it('QR 링크로 참여하고 질문을 한 단계씩 저장한 뒤 대기 화면으로 이동한다', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
     let completed = false;
     const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
@@ -89,6 +90,11 @@ describe('익명 자기소개 나눔', () => {
     fireEvent.click(screen.getByRole('button', { name: '참여하기' }));
 
     expect(await screen.findByRole('heading', { name: '요즘 가장 좋아하는 것은 무엇인가요?' })).toBeTruthy();
+    expect(pushState).toHaveBeenCalledWith(
+      window.history.state,
+      '',
+      `/?activity=anonymous-sharing#room=${ROOM_ID}`,
+    );
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '산책' } });
     fireEvent.click(screen.getByRole('button', { name: '다음' }));
 
@@ -478,5 +484,57 @@ describe('익명 자기소개 나눔', () => {
     expect(await screen.findByRole('button', { name: '모임 종료하기' })).toBeTruthy();
     expect(screen.queryByText('모든 이야기 완료')).toBeNull();
     expect(screen.queryByText(/번째 이야기/)).toBeNull();
+  });
+
+  it('작성자가 자리를 비우면 진행자가 확인 후 건너뛰고 모임을 끝낸다', async () => {
+    window.history.replaceState({}, '', `/?activity=anonymous-sharing#room=${ROOM_ID}`);
+    let finished = false;
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith(`/api/rooms/${ROOM_ID}/skip`)) {
+        finished = true;
+        return json({ state: 'FINISHED', sequence: null, total: 1, answers: [], canReveal: false, roomVersion: 8 });
+      }
+      if (url.endsWith(`/api/rooms/${ROOM_ID}/complete`)) {
+        return json({ status: 'COMPLETED' });
+      }
+      if (url.endsWith(`/api/rooms/${ROOM_ID}/state`)) {
+        return json({
+          roomId: ROOM_ID,
+          roomCode: '7KFM-3QPX',
+          title: '빈자리에도 이어가는 모임',
+          status: 'SHARING',
+          role: 'HOST',
+          version: 8,
+          participantCount: 1,
+          completedParticipantCount: 1,
+          participantJoined: false,
+          responseCompleted: false,
+          currentRound: finished ? 1 : 0,
+          totalRounds: 1,
+          expiresAt: '2026-09-02T00:00:00Z',
+        });
+      }
+      if (url.endsWith(`/api/rooms/${ROOM_ID}/sharing/current`)) {
+        return json(finished
+          ? { state: 'FINISHED', sequence: null, total: 1, answers: [], canReveal: false, roomVersion: 8 }
+          : {
+              state: 'ANONYMOUS', sequence: 0, total: 1,
+              answers: [{ question: '질문', answer: '먼저 간 사람의 답변' }],
+              canReveal: false, roomVersion: 7,
+            });
+      }
+      return json({ code: 'NOT_FOUND', detail: 'not found' }, 404);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AnonymousSharingApp onBackHome={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: '작성자가 자리를 비웠어요' }));
+    expect(screen.getByText('이번 이야기를 건너뛸까요?')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '건너뛰고 계속하기' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: '모임 종료하기' }));
+    expect(await screen.findByRole('heading', { name: /함께 나눈 이야기는/ })).toBeTruthy();
+    expect(window.localStorage.getItem('ongi.anonymous-sharing.room.v1')).toBeNull();
   });
 });

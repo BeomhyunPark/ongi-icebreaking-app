@@ -144,6 +144,11 @@ export const sharingApi = {
     { method: 'POST', body: JSON.stringify({ expectedVersion, expectedRound }) },
   ),
 
+  skip: (roomId: string, expectedVersion: number, expectedRound: number) => request<CurrentSharing>(
+    `/api/rooms/${roomId}/skip`,
+    { method: 'POST', body: JSON.stringify({ expectedVersion, expectedRound }) },
+  ),
+
   completeRoom: (roomId: string, expectedVersion: number) => request<{ status: 'COMPLETED' }>(
     `/api/rooms/${roomId}/complete`,
     { method: 'POST', body: JSON.stringify({ expectedVersion }) },

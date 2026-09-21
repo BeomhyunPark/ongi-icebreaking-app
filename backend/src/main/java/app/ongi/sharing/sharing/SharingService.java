@@ -114,6 +114,15 @@ public class SharingService {
 
     @Transactional
     public CurrentSharingResponse next(RoomAccess access, long expectedVersion, int expectedRound) {
+        return advance(access, expectedVersion, expectedRound, false);
+    }
+
+    @Transactional
+    public CurrentSharingResponse skip(RoomAccess access, long expectedVersion, int expectedRound) {
+        return advance(access, expectedVersion, expectedRound, true);
+    }
+
+    private CurrentSharingResponse advance(RoomAccess access, long expectedVersion, int expectedRound, boolean skip) {
         requireHost(access);
         Room room = lockRoom(access.roomId());
         long total = roundRepository.countByRoomId(room.getId());
@@ -123,7 +132,11 @@ public class SharingService {
             if (room.getCurrentRound() != expectedRound) {
                 throw new StateTransitionException(Reason.ROUND_CHANGED);
             }
-            round.complete(clock.instant());
+            if (skip) {
+                round.skip(clock.instant());
+            } else {
+                round.complete(clock.instant());
+            }
             room.advanceRound(expectedVersion, expectedRound, Math.toIntExact(total));
         } catch (StateTransitionException exception) {
             throw stateConflict(exception);
@@ -145,9 +158,7 @@ public class SharingService {
             throw stateConflict(exception);
         }
         roomRepository.flush();
-        sessionRepository.detachParticipantsAndExpireAt(
-            room.getId(), now.plus(properties.session().tombstoneRetention())
-        );
+        sessionRepository.deleteAllByRoomId(room.getId());
         participantRepository.deleteAllByRoomId(room.getId());
         eventPublisher.publishAfterCommit(room.getPublicId(), RoomEventType.ROOM_COMPLETED, room.getVersion());
         return new CompletedRoomResponse(room.getStatus(), room.getCompletedAt(), room.getVersion());

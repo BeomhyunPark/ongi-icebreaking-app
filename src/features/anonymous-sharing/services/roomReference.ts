@@ -35,8 +35,16 @@ export function readSharingHash(hash = window.location.hash): { roomId: string |
   };
 }
 
-export function replaceSharingHash(kind: 'room' | 'join' | null, value?: string): void {
+function updateSharingHash(kind: 'room' | 'join' | null, value: string | undefined, action: 'push' | 'replace'): void {
   const url = new URL(window.location.href);
   url.hash = kind && value ? `${kind}=${encodeURIComponent(value)}` : '';
-  window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  window.history[`${action}State`](window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
+export function replaceSharingHash(kind: 'room' | 'join' | null, value?: string): void {
+  updateSharingHash(kind, value, 'replace');
+}
+
+export function pushSharingHash(kind: 'room' | 'join', value: string): void {
+  updateSharingHash(kind, value, 'push');
 }

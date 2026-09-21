@@ -4,6 +4,7 @@ import type { CurrentSharing } from '../domain/types';
 import { readDraft, storeDraft, removeDraft } from '../services/draftStorage';
 import {
   clearRoomReference,
+  pushSharingHash,
   replaceSharingHash,
   saveRoomReference,
 } from '../services/roomReference';
@@ -91,6 +92,13 @@ export function useSharingSession(
   }, []);
 
   const { roomId, roomState, answers, questions, questionIndex } = session;
+  const completeRoom = useCallback(() => {
+    if (roomId) removeDraft(roomId);
+    draft.current = {};
+    clearRoomReference();
+    replaceSharingHash(null);
+    dispatch({ type: 'COMPLETE_ROOM' });
+  }, [roomId]);
   useEffect(() => {
     if (
       busy ||
@@ -119,11 +127,12 @@ export function useSharingSession(
     },
     openRoom: async (nextRoomId: string) => {
       saveRoomReference(nextRoomId);
-      replaceSharingHash('room', nextRoomId);
+      pushSharingHash('room', nextRoomId);
       dispatch({ type: 'OPEN_ROOM', roomId: nextRoomId });
       await hydrateRoom(nextRoomId);
     },
     setSharing: (sharing: CurrentSharing) => dispatch({ type: 'UPDATE_SHARING', sharing }),
+    completeRoom,
     moveQuestionIndex: (direction: -1 | 1) => dispatch({ type: 'MOVE_QUESTION', direction }),
     restartQuestions: () => dispatch({ type: 'RESTART_QUESTIONS' }),
     editAnswer: (questionId: string, value: string) => {

@@ -13,6 +13,7 @@ import { getCachedVisitorCount, getVisitorCount } from '../../engagement/tracker
 
 type HomeScreenProps = {
   featuredActivityId: ActivityId | null;
+  hasActiveSharingRoom: boolean;
   onOpenUpdates: () => void;
   onSelectActivity: (
     activityId: ActivityId,
@@ -56,6 +57,7 @@ export function pickFeaturedActivity(
 
 export function HomeScreen({
   featuredActivityId,
+  hasActiveSharingRoom,
   onOpenUpdates,
   onSelectActivity,
 }: HomeScreenProps) {
@@ -190,7 +192,11 @@ export function HomeScreen({
                   </span>
                 ) : null}
                 <span className="community-tool-card__action">
-                  {activity.id === 'group-picker' ? '전체 도구 보기' : '모임 시작하기'}
+                  {activity.id === 'anonymous-sharing' && hasActiveSharingRoom
+                    ? '진행 중인 모임으로 돌아가기'
+                    : activity.id === 'group-picker'
+                      ? '전체 도구 보기'
+                      : '모임 시작하기'}
                 </span>
               </article>
             ))}

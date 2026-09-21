@@ -15,11 +15,22 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.6.1',
+    date: '2026.09.21',
+    title: '자리를 비워도 이어지는 나눔',
+    summary: '작성자가 먼저 자리를 떠나도 남은 사람끼리 나눔을 끝까지 이어갈 수 있어요.',
+    current: true,
+    changes: [
+      { title: '빈자리 건너뛰기', description: '작성자가 돌아오지 못하면 진행자가 확인 후 해당 이야기를 건너뛰고 다음 사람으로 이어가요.' },
+      { title: '종료 즉시 정보 삭제', description: '모임을 종료하면 답변과 참여 정보뿐 아니라 접속 세션도 바로 삭제해요.' },
+      { title: '진행 중인 모임 복귀', description: '뒤로 나가도 홈에서 진행 중인 모임을 확인하고 다시 돌아갈 수 있어요.' },
+    ],
+  },
+  {
     version: 'v2.6.0',
     date: '2026.09.15',
     title: '구르미 테스트 정식 출시',
     summary: '구르미 테스트를 정식 출시했어요.',
-    current: true,
     changes: [
       { title: '테스트끼리 한곳에', description: '홈에서 마음속 흔적 찾기와 구르미 테스트를 함께 볼 수 있어요.' },
       { title: '간결한 구르미 결과', description: '공감도와 의견 설문을 없애고, 결과 공유·다른 구르미 보기·다시 테스트하기 버튼을 정리했어요.' },

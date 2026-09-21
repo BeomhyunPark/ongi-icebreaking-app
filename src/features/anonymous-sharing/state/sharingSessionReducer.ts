@@ -12,6 +12,7 @@ export type SharingSessionAction =
   | { type: 'MOVE_QUESTION'; direction: -1 | 1 }
   | { type: 'RESTART_QUESTIONS' }
   | { type: 'UPDATE_SHARING'; sharing: CurrentSharing }
+  | { type: 'COMPLETE_ROOM' }
   | { type: 'RESET' };
 
 export function createSharingSession(roomId: string | null = null): SharingSession {
@@ -62,6 +63,19 @@ export function sharingSessionReducer(
       return { ...state, questionIndex: 0 };
     case 'UPDATE_SHARING':
       return state.roomState ? { ...state, sharing: action.sharing } : state;
+    case 'COMPLETE_ROOM':
+      return state.roomState ? {
+        ...state,
+        roomState: {
+          ...state.roomState,
+          status: 'COMPLETED',
+          participantCount: 0,
+          completedParticipantCount: 0,
+        },
+        participants: [],
+        answers: {},
+        sharing: null,
+      } : state;
     case 'RESET':
       return createSharingSession();
   }

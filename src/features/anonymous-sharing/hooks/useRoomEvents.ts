@@ -12,8 +12,9 @@ const ROOM_EVENTS = [
   'ROOM_CANCELLED',
   'ROOM_COMPLETED',
 ] as const;
+export type RoomEventName = typeof ROOM_EVENTS[number] | 'CONNECTED';
 
-export function useRoomEvents(roomId: string | null, onRoomEvent: () => void) {
+export function useRoomEvents(roomId: string | null, onRoomEvent: (event: RoomEventName) => void) {
   const [reconnecting, setReconnecting] = useState(false);
 
   useEffect(() => {
@@ -23,18 +24,21 @@ export function useRoomEvents(roomId: string | null, onRoomEvent: () => void) {
     }
 
     let eventSource: EventSource | null = null;
-    const handleEvent = () => onRoomEvent();
+    const handlers = ROOM_EVENTS.map((eventName) => ({
+      eventName,
+      handler: () => onRoomEvent(eventName),
+    }));
     const handleOpen = () => {
       setReconnecting(false);
       // SSE has no replay: fetch changes missed while disconnected, including
       // changes between the initial snapshot and the first subscription.
-      onRoomEvent();
+      onRoomEvent('CONNECTED');
     };
     const handleError = () => setReconnecting(true);
     const disconnect = () => {
       const source = eventSource;
       if (!source) return;
-      ROOM_EVENTS.forEach((eventName) => source.removeEventListener(eventName, handleEvent));
+      handlers.forEach(({ eventName, handler }) => source.removeEventListener(eventName, handler));
       source.removeEventListener('CONNECTED', handleOpen);
       source.onerror = null;
       source.close();
@@ -45,7 +49,7 @@ export function useRoomEvents(roomId: string | null, onRoomEvent: () => void) {
       const source = new EventSource(roomEventsUrl(roomId), { withCredentials: true });
       eventSource = source;
       source.addEventListener('CONNECTED', handleOpen);
-      ROOM_EVENTS.forEach((eventName) => source.addEventListener(eventName, handleEvent));
+      handlers.forEach(({ eventName, handler }) => source.addEventListener(eventName, handler));
       source.onerror = handleError;
     };
     const handleOffline = () => {

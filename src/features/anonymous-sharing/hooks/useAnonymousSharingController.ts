@@ -7,7 +7,7 @@ import {
   replaceSharingHash,
 } from '../services/roomReference';
 import { joinUrl } from '../services/invitation';
-import { useRoomEvents } from './useRoomEvents';
+import { useRoomEvents, type RoomEventName } from './useRoomEvents';
 import { useSharingSession } from './useSharingSession';
 import {
   completeContentParticipation,
@@ -51,6 +51,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     loading,
     hydrateRoom,
     setSharing,
+    completeRoom: completeSession,
     saveCurrentAnswer,
     editAnswer,
   } = session;
@@ -61,11 +62,12 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     }
   }, [roomState?.status]);
 
-  const refreshCurrentRoom = useCallback(() => {
+  const refreshCurrentRoom = useCallback((event: RoomEventName) => {
     if (roomId && !leaving.current) {
-      void hydrateRoom(roomId);
+      if (event === 'ROOM_COMPLETED') completeSession();
+      else void hydrateRoom(roomId);
     }
-  }, [hydrateRoom, roomId]);
+  }, [completeSession, hydrateRoom, roomId]);
   const reconnecting = useRoomEvents(
     roomState?.status === 'COMPLETED' ? null : roomId,
     refreshCurrentRoom,
@@ -263,13 +265,22 @@ export function useAnonymousSharingController(onBackHome: () => void) {
       if (!isCurrent()) return;
     });
 
+  const skipStory = () =>
+    run(async (isCurrent) => {
+      if (!roomId || !sharing || sharing.sequence === null) return;
+      const nextSharing = await sharingApi.skip(roomId, sharing.roomVersion, sharing.sequence);
+      if (!isCurrent()) return;
+      setSharing(nextSharing);
+      await hydrateRoom(roomId);
+      if (!isCurrent()) return;
+    });
+
   const completeRoom = () =>
     run(async (isCurrent) => {
       if (!roomId || !sharing) return;
       await sharingApi.completeRoom(roomId, sharing.roomVersion);
       if (!isCurrent()) return;
-      await hydrateRoom(roomId);
-      if (!isCurrent()) return;
+      completeSession();
     });
 
   const visibleRoomCode = roomState?.roomCode ?? roomCode;
@@ -329,6 +340,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     returnToHostLobby,
     reveal,
     nextStory,
+    skipStory,
     completeRoom,
     editAnswer,
     visibleRoomCode,
