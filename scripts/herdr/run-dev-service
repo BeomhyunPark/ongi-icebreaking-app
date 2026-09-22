@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SERVICE="${1:-}"
+STATE_DIR="$PROJECT_ROOT/.herdr/logs"
+CHILD_PID=""
+STATE_FILE=""
+
+usage() {
+  printf 'Usage: scripts/herdr/run-dev-service <frontend|backend>\n' >&2
+}
+
+cleanup() {
+  local status=$?
+  trap - EXIT INT TERM
+  if [[ -n "$CHILD_PID" ]] && kill -0 "$CHILD_PID" 2>/dev/null; then
+    kill -INT "$CHILD_PID" 2>/dev/null || true
+    wait "$CHILD_PID" 2>/dev/null || true
+  fi
+  [[ -n "$STATE_FILE" ]] && rm -f "$STATE_FILE"
+  exit "$status"
+}
+
+case "$SERVICE" in
+  frontend|backend) ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+[[ "${HERDR_ENV:-}" == "1" ]] || {
+  printf '[ongi-herdr] ERROR: service runner must run inside a Herdr pane.\n' >&2
+  exit 1
+}
+[[ -n "${HERDR_PANE_ID:-}" ]] || {
+  printf '[ongi-herdr] ERROR: HERDR_PANE_ID is not set.\n' >&2
+  exit 1
+}
+
+mkdir -p "$STATE_DIR"
+STATE_FILE="$STATE_DIR/dev-$SERVICE.pid.log"
+printf '%s %s\n' "$$" "$HERDR_PANE_ID" >"$STATE_FILE"
+trap cleanup EXIT INT TERM
+
+cd "$PROJECT_ROOT"
+printf '[ongi-herdr] %s starting in pane %s\n' "$SERVICE" "$HERDR_PANE_ID"
+
+if [[ "$SERVICE" == "frontend" ]]; then
+  npm run dev &
+else
+  if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    set -a
+    # This repository-local file supplies the same DB credentials used by Compose.
+    # shellcheck disable=SC1091
+    source "$PROJECT_ROOT/.env"
+    set +a
+  fi
+  (
+    cd "$PROJECT_ROOT/backend"
+    ./gradlew bootRun
+  ) &
+fi
+
+CHILD_PID=$!
+wait "$CHILD_PID"

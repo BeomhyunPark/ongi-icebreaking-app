@@ -90,7 +90,7 @@ export function ResultScreen({ resultId, onRestart, onBackHome }: ResultScreenPr
 
         <div className="result-quick-actions">
           <button className="result-save-button" type="button" disabled={isSaving || (!resultFile && !imageLoadFailed)}
-            onClick={() => void saveResultImage('share')}>{isSaving ? '준비 중…' : !resultFile && !imageLoadFailed ? '이미지 준비 중…' : '내 결과 공유'}</button>
+            onClick={() => void saveResultImage('share')}>{isSaving ? '준비 중…' : !resultFile && !imageLoadFailed ? '이미지 준비 중…' : '내 결과 공유하기'}</button>
           <button className="result-image-download" type="button" disabled={isSaving || (!resultFile && !imageLoadFailed)}
             onClick={() => void saveResultImage()}>{imageLoadFailed ? '이미지 다시 불러오기' : '결과 이미지 저장하기'}</button>
           <p className="result-save-notice" aria-live="polite">{saveMessage}</p>
@@ -138,7 +138,7 @@ export function ResultScreen({ resultId, onRestart, onBackHome }: ResultScreenPr
         </details>
 
         <div className="result-navigation">
-          <button className="result-restart-button" type="button" onClick={onRestart}>처음부터 다시 하기</button>
+          <button className="result-restart-button" type="button" onClick={onRestart}>테스트 다시 하기</button>
           <button className="result-home-button" type="button" onClick={onBackHome}>홈으로</button>
         </div>
       </div>

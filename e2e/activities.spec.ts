@@ -48,11 +48,11 @@ test('heart result survives reload', async ({ page }) => {
   }
   await expect(page.getByRole('radiogroup', { name: '마지막 문항 선택지' })).toBeVisible();
   await page.locator('.answer-option').first().click();
-  await expect(page.getByRole('button', { name: '내 결과 공유', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '내 결과 공유하기', exact: true })).toBeVisible();
   const result = await page.locator('h1').innerText();
   await page.reload();
   await expect(page.locator('h1')).toHaveText(result);
-  await expect(page.getByRole('button', { name: '내 결과 공유', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '내 결과 공유하기', exact: true })).toBeVisible();
 });
 
 test('balance restores question order and previous answer', async ({ page }) => {

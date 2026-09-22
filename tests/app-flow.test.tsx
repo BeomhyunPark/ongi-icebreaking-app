@@ -506,7 +506,7 @@ describe('앱 화면 흐름과 접근성', () => {
     });
 
     expect(screen.getByRole('heading', { name: RESULT_TYPES.bear.name })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '처음부터 다시 하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '테스트 다시 하기' }));
 
     expect(screen.getByRole('heading', { name: '마음속 흔적 찾기' })).toBeTruthy();
     expect(screen.queryByRole('radio')).toBeNull();
