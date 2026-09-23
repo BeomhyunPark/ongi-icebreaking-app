@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CORE="$ROOT/scripts/herdr/herdr-dev"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/herdr-dev-test.XXXXXX")"
+trap 'rm -rf -- "$TMP"' EXIT
+
+mkdir -p "$TMP/project/.herdr"
+cat >"$TMP/project/.herdr/project.conf" <<'EOF'
+PROJECT_NAME="Regression"
+PROJECT_SLUG="regression"
+FRONTEND_DIR="."
+FRONTEND_VERIFY="exit 23"
+EOF
+
+set +e
+"$CORE" _run-tests "$TMP/project" verify deliberate-failure >/dev/null 2>&1
+status=$?
+set -e
+
+[[ "$status" == 23 ]] || { printf 'expected failing command status 23, got %s\n' "$status" >&2; exit 1; }
+[[ "$(<"$TMP/project/.herdr/logs/deliberate-failure-status")" == 23 ]] || { printf 'recorded test status was not 23\n' >&2; exit 1; }
+grep -F '[h:regression:deliberate-failure] result=23' "$TMP/project/.herdr/logs/deliberate-failure-verify.log" >/dev/null
+
+cat >"$TMP/project/.herdr/project.conf" <<'EOF'
+PROJECT_NAME="Regression"
+PROJECT_SLUG="regression"
+FRONTEND_DIR="."
+FRONTEND_DEV="env EXAMPLE=1 deliberately-missing-herdr-command"
+EOF
+set +e
+(cd "$TMP/project" && "$CORE" doctor) >"$TMP/doctor.log" 2>&1
+status=$?
+set -e
+[[ "$status" != 0 ]] || { printf 'doctor succeeded with a missing configured executable\n' >&2; exit 1; }
+grep -F 'FRONTEND_DEV requires command: deliberately-missing-herdr-command' "$TMP/doctor.log" >/dev/null
+
+mkdir -p "$TMP/cycle-repo" "$TMP/cycle-state"
+git -C "$TMP/cycle-repo" init -q -b main
+printf 'before\n' >"$TMP/cycle-repo/change.txt"
+git -C "$TMP/cycle-repo" add change.txt
+git -C "$TMP/cycle-repo" -c user.name=Test -c user.email=test@example.com commit -qm initial
+(
+  source "$CORE"
+  cd "$TMP/cycle-repo"
+  ROOT="$TMP/cycle-repo"; STATE="$TMP/cycle-state"; PROJECT_SLUG=regression; TPANE=test; WAIT_TIMEOUT_MS=1000
+  start_tests(){ printf '0\n' >"$STATE/$2-status"; }
+  run_review(){ VERDICT=PASS; }
+  herdr(){ return 0; }
+  baseline="$(snapshot)"
+  printf 'after autofix\n' >change.txt
+  all_once verify >/dev/null
+  current="$(snapshot)"
+  [[ "$VERIFIED_TREE" == "$current" ]] || { printf 'final successful cycle did not freeze the autofixed tree\n' >&2; exit 1; }
+  [[ "$VERIFIED_TREE" != "$baseline" ]] || { printf 'autofixed tree was incorrectly compared with the pre-fix tree\n' >&2; exit 1; }
+)
+
+REAL_GIT="$(command -v git)"
+mkdir -p "$TMP/ship-repo/.herdr" "$TMP/mock-bin"
+"$REAL_GIT" -C "$TMP/ship-repo" init -q -b main
+cat >"$TMP/ship-repo/.herdr/project.conf" <<'EOF'
+PROJECT_NAME="Ship regression"
+PROJECT_SLUG="ship-regression"
+DEPLOY_MODE="github-actions"
+DEPLOY_BRANCH="main"
+DEPLOY_WORKFLOW="deploy.yml"
+EOF
+printf 'before\n' >"$TMP/ship-repo/change.txt"
+"$REAL_GIT" -C "$TMP/ship-repo" add .herdr/project.conf change.txt
+"$REAL_GIT" -C "$TMP/ship-repo" -c user.name=Test -c user.email=test@example.com commit -qm initial
+"$REAL_GIT" -C "$TMP/ship-repo" remote add origin https://github.com/example/project.git
+printf 'after\n' >"$TMP/ship-repo/change.txt"
+cat >"$TMP/mock-bin/git" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  fetch|commit|push) printf '%s\n' "$1" >>"$MOCK_GIT_LOG"; exit 91 ;;
+  *) exec "$HERDR_REAL_GIT" "$@" ;;
+esac
+EOF
+cat >"$TMP/mock-bin/gh" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1:-} ${2:-}" == 'auth status' ]]; then [[ "$MOCK_GH_MODE" != unauthenticated ]]; exit; fi
+if [[ "${1:-} ${2:-}" == 'workflow view' ]]; then [[ "$MOCK_GH_MODE" != missing-workflow ]]; exit; fi
+if [[ "${1:-}" == api ]]; then
+  [[ "$MOCK_GH_MODE" == policy ]] && printf '%s\n' '[{"enforcement":"active","rules":[{"type":"pull_request"}]}]' || printf '%s\n' '[]'
+  exit
+fi
+exit 1
+EOF
+chmod +x "$TMP/mock-bin/git" "$TMP/mock-bin/gh"
+
+for mode in unauthenticated missing-workflow policy; do
+  : >"$TMP/git-actions.log"
+  set +e
+  (cd "$TMP/ship-repo" && PATH="$TMP/mock-bin:$PATH" HERDR_REAL_GIT="$REAL_GIT" MOCK_GIT_LOG="$TMP/git-actions.log" MOCK_GH_MODE="$mode" "$CORE" ship --yes) >"$TMP/ship-$mode.log" 2>&1
+  status=$?
+  set -e
+  [[ "$status" != 0 ]] || { printf 'ship succeeded despite failed %s preflight\n' "$mode" >&2; exit 1; }
+  [[ ! -s "$TMP/git-actions.log" ]] || { printf 'ship reached a mutating git action before %s preflight failed\n' "$mode" >&2; exit 1; }
+done
+grep -F 'Authenticated GitHub CLI is required before commit or push' "$TMP/ship-unauthenticated.log" >/dev/null
+grep -F 'Could not verify configured GitHub Actions workflow: deploy.yml' "$TMP/ship-missing-workflow.log" >/dev/null
+grep -F 'GitHub rules require a pull request for main; direct ship is blocked' "$TMP/ship-policy.log" >/dev/null
+
+printf 'herdr-dev regression tests passed\n'

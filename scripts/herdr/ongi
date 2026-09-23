@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+core="${HERDR_DEV_CORE:-$script_dir/herdr-dev}"
+[[ -x "$core" ]] || {
+  printf '[ongi] ERROR: Herdr Dev core is not executable: %s\n' "$core" >&2
+  printf '[ongi] Restore scripts/herdr/herdr-dev or set HERDR_DEV_CORE to a compatible executable.\n' >&2
+  exit 1
+}
+exec "$core" "$@"

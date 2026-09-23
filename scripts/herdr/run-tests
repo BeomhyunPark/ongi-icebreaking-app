@@ -1,85 +1,9 @@
 #!/usr/bin/env bash
-
-set -uo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PROFILE="${1:-}"
-RUN_ID="${2:-manual-$(date +%Y%m%d-%H%M%S)}"
-LOG_DIR="$PROJECT_ROOT/.herdr/logs"
-LOG_FILE="$LOG_DIR/$RUN_ID-$PROFILE.log"
-STATUS_FILE="$LOG_DIR/$RUN_ID-status.log"
-
-usage() {
-  printf 'Usage: scripts/herdr/run-tests <frontend|verify|backend|e2e|full> [run-id]\n'
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+core="${HERDR_DEV_CORE:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/herdr-dev}"
+[[ -x "$core" ]] || {
+  printf '[ongi] ERROR: Herdr Dev core is not executable: %s\n' "$core" >&2
+  exit 1
 }
-
-if [[ -z "$PROFILE" ]]; then
-  usage >&2
-  exit 2
-fi
-
-case "$PROFILE" in
-  frontend|verify|backend|e2e|full) ;;
-  *)
-    usage >&2
-    printf 'Unknown profile: %s\n' "$PROFILE" >&2
-    exit 2
-    ;;
-esac
-
-mkdir -p "$LOG_DIR"
-cd "$PROJECT_ROOT"
-
-{
-  printf '\n[ongi-herdr:%s] started profile=%s at %s\n' "$RUN_ID" "$PROFILE" "$(date '+%Y-%m-%d %H:%M:%S %Z')"
-  printf '[ongi-herdr:%s] repository=%s\n\n' "$RUN_ID" "$PROJECT_ROOT"
-} | tee "$LOG_FILE"
-
-set +e
-case "$PROFILE" in
-  frontend)
-    npm test 2>&1 | tee -a "$LOG_FILE"
-    status=${PIPESTATUS[0]}
-    ;;
-  verify)
-    npm run verify 2>&1 | tee -a "$LOG_FILE"
-    status=${PIPESTATUS[0]}
-    ;;
-  backend)
-    (cd backend && ./gradlew test) 2>&1 | tee -a "$LOG_FILE"
-    status=${PIPESTATUS[0]}
-    ;;
-  e2e)
-    npm run test:e2e 2>&1 | tee -a "$LOG_FILE"
-    status=${PIPESTATUS[0]}
-    ;;
-  full)
-    npm run verify 2>&1 | tee -a "$LOG_FILE"
-    frontend_status=${PIPESTATUS[0]}
-    if [[ "$frontend_status" -eq 0 ]]; then
-      (cd backend && ./gradlew test) 2>&1 | tee -a "$LOG_FILE"
-      status=${PIPESTATUS[0]}
-    else
-      status=$frontend_status
-      printf '\n[ongi-herdr:%s] backend skipped because frontend verify failed\n' "$RUN_ID" | tee -a "$LOG_FILE"
-    fi
-    ;;
-esac
-set -e
-
-if [[ "$status" -eq 0 ]]; then
-  result="PASS"
-else
-  result="FAIL (exit $status)"
-fi
-
-{
-  printf '\n[ongi-herdr:%s] result=%s\n' "$RUN_ID" "$result"
-  printf '[ongi-herdr:%s] log=%s\n' "$RUN_ID" "$LOG_FILE"
-  printf '[ongi-herdr:%s] finished\n' "$RUN_ID"
-} | tee -a "$LOG_FILE"
-
-cp "$LOG_FILE" "$LOG_DIR/latest.log"
-printf '%s\n' "$status" >"$STATUS_FILE"
-exit "$status"
+exec "$core" _run-tests "$root" "${1:-}" "${2:-manual-$(date +%Y%m%d-%H%M%S)}"

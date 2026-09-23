@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run --testTimeout=20000 --maxWorkers=2",
+    "test:herdr": "scripts/herdr/test-herdr-dev",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "build:e2e": "tsc -b && vite build --outDir dist-e2e",
@@ -13,7 +14,7 @@
     "load:anonymous-sharing": "node scripts/load/anonymous-sharing-load.mjs",
     "generate:share-images": "java -Djava.awt.headless=true scripts/GenerateShareImages.java",
     "build": "tsc -b && vite build",
-    "verify": "npm test && npm run build",
+    "verify": "npm test && npm run test:herdr && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,0 +1,339 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HERDR_DEV_HOME="${HERDR_DEV_HOME:-$HOME/.config/herdr-dev}"
+CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CORE="${HERDR_DEV_CORE:-$CORE_DIR/herdr-dev}"
+ROOT="" CONF=""
+
+die(){ printf '[h] ERROR: %s\n' "$*" >&2; exit 1; }
+log(){ printf '[h:%s] %s\n' "${PROJECT_NAME:-herdr}" "$*"; }
+need(){ command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"; }
+usage(){ cat <<'EOF'
+Usage: h <command> [options]
+
+  init                       create .herdr/project.conf interactively
+  dev | status | stop | restart
+  review | test [profile] | all [profile] [--autofix] | autofix [profile]
+  ship [--dry-run] [--autofix] [--yes] | deploy-status | results
+  task <name> | task-clean <name> | watch
+  remote <project-or-host> [--dry-run] | remote-info | doctor
+
+Profiles: frontend, verify, backend, e2e, full
+EOF
+}
+
+find_root(){
+  local d="${1:-$PWD}"; d="$(cd "$d" 2>/dev/null && pwd -P)" || return 1
+  while :; do
+    [[ -f "$d/.herdr/project.conf" ]] && { ROOT="$d"; CONF="$d/.herdr/project.conf"; return; }
+    [[ "$d" == / ]] && return 1; d="$(dirname "$d")"
+  done
+}
+allowed(){ case "$1" in
+  PROJECT_NAME|PROJECT_SLUG|FRONTEND_DIR|FRONTEND_DEV|FRONTEND_TEST|FRONTEND_BUILD|FRONTEND_VERIFY|FRONTEND_E2E|FRONTEND_URL|BACKEND_DIR|BACKEND_DEV|BACKEND_TEST|BACKEND_HEALTH_URL|DB_START|DB_STOP|DB_READY|DEPLOY_MODE|DEPLOY_COMMAND|DEPLOY_BRANCH|DEPLOY_WORKFLOW|FRONTEND_PRODUCTION_URL|BACKEND_PRODUCTION_HEALTH_URL|REVIEWER_PROMPT|DEFAULT_TEST_PROFILE|TASK_ROOT|WAIT_TIMEOUT_MS|START_TIMEOUT_SECONDS|DEPLOY_TIMEOUT_SECONDS) return 0;; *) return 1;; esac
+}
+decode(){
+  local v="$1"
+  if [[ "$v" == \"*\" && "$v" == *\" ]]; then v="${v:1:${#v}-2}"; v="${v//\\\"/\"}"; v="${v//\\\\/\\}"
+  elif [[ "$v" == \'*\' && "$v" == *\' ]]; then v="${v:1:${#v}-2}"; fi
+  printf %s "$v"
+}
+load_file(){
+  local f="$1" line key raw n=0
+  while IFS= read -r line || [[ -n "$line" ]]; do n=$((n+1)); line="${line%$'\r'}"
+    [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]] || die "$f:$n: expected KEY=value"
+    key="${BASH_REMATCH[1]}"; raw="${BASH_REMATCH[2]}"; allowed "$key" || die "$f:$n: unsupported key $key"
+    printf -v "$key" %s "$(decode "$raw")"
+  done <"$f"
+}
+load_project(){
+  find_root || die "No .herdr/project.conf above $PWD; run 'h init' at the Git root."
+  PROJECT_NAME="" PROJECT_SLUG="" FRONTEND_DIR="" FRONTEND_DEV="" FRONTEND_TEST="" FRONTEND_BUILD="" FRONTEND_VERIFY="" FRONTEND_E2E="" FRONTEND_URL=""
+  BACKEND_DIR="" BACKEND_DEV="" BACKEND_TEST="" BACKEND_HEALTH_URL="" DB_START="" DB_STOP="" DB_READY=""
+  DEPLOY_MODE=none DEPLOY_COMMAND="" DEPLOY_BRANCH="" DEPLOY_WORKFLOW="" FRONTEND_PRODUCTION_URL="" BACKEND_PRODUCTION_HEALTH_URL=""
+  REVIEWER_PROMPT=.herdr/reviewer-prompt.txt DEFAULT_TEST_PROFILE=verify TASK_ROOT="" WAIT_TIMEOUT_MS=900000 START_TIMEOUT_SECONDS=120 DEPLOY_TIMEOUT_SECONDS=1800
+  load_file "$CONF"; [[ -n "$PROJECT_NAME" ]] || die "PROJECT_NAME is required"
+  [[ -n "$PROJECT_SLUG" ]] || PROJECT_SLUG="$(printf %s "$PROJECT_NAME" | tr '[:upper:] _' '[:lower:]--' | tr -cd a-z0-9-)"
+  [[ "$PROJECT_SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "Invalid PROJECT_SLUG"
+  [[ "$WAIT_TIMEOUT_MS$START_TIMEOUT_SECONDS$DEPLOY_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]] || die "Timeouts must be integers"
+  [[ -n "$TASK_ROOT" ]] || TASK_ROOT="$(dirname "$ROOT")/$(basename "$ROOT")-worktrees"; [[ "$TASK_ROOT" == /* ]] || TASK_ROOT="$ROOT/$TASK_ROOT"
+  STATE="$ROOT/.herdr/logs"; PROMPT="$ROOT/$REVIEWER_PROMPT"
+  REVIEWER="$PROJECT_SLUG-reviewer"; IMPLEMENTER="$PROJECT_SLUG-implementer"
+}
+run_cmd(){ local dir="$1" cmd="$2"; [[ -n "$cmd" ]] || return 0; [[ -z "$dir" || -d "$ROOT/$dir" ]] || die "Missing directory: $dir"; (cd "$ROOT/${dir:-.}" && bash -lc "$cmd"); }
+qcmd(){ local o="" x; for x in "$@"; do printf -v x %q "$x"; o+="${o:+ }$x"; done; printf %s "$o"; }
+herdr_ctx(){ [[ "${HERDR_ENV:-}" == 1 && -n "${HERDR_WORKSPACE_ID:-}" ]] || die "Run inside a Herdr-managed pane (HERDR_ENV=1)."; }
+jv(){ jq -er "$2 // empty" <<<"$1" 2>/dev/null || true; }
+
+prompt(){ local p="$1" d="$2" a; read -r -p "$p [$d] " a || true; printf %s "${a:-$d}"; }
+yes(){ local p="$1" d="$2" a; read -r -p "$p [$d] " a || true; a="${a:-$d}"; [[ "$a" =~ ^[Yy]([Ee][Ss])?$ ]]; }
+wq(){ local v="$1"; v="${v//\\/\\\\}"; v="${v//\"/\\\"}"; printf '"%s"' "$v"; }
+init_cmd(){
+  local r f name slug fd="" fdev="" ftest="" fbuild="" fverify="" fe2e="" bd="" bdev="" btest="" dbs="" dbx="" branch
+  r="$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)"; f="$r/.herdr/project.conf"
+  [[ ! -e "$f" ]] || yes "$f exists. Overwrite?" N || die "Initialization cancelled"
+  name="$(prompt 'Project name' "$(basename "$r")")"; slug="$(printf %s "$name" | tr '[:upper:] _' '[:lower:]--' | tr -cd a-z0-9-)"
+  if [[ -f "$r/package.json" && -x "$(command -v node || true)" ]]; then fd=.; fdev="$(node -e 'let p=require(process.argv[1]);process.stdout.write(p.scripts?.dev?"npm run dev":"")' "$r/package.json")"; ftest="$(node -e 'let p=require(process.argv[1]);process.stdout.write(p.scripts?.test?"npm test":"")' "$r/package.json")"; fbuild="$(node -e 'let p=require(process.argv[1]);process.stdout.write(p.scripts?.build?"npm run build":"")' "$r/package.json")"; fverify="$(node -e 'let p=require(process.argv[1]);process.stdout.write(p.scripts?.verify?"npm run verify":"")' "$r/package.json")"; fe2e="$(node -e 'let p=require(process.argv[1]);process.stdout.write(p.scripts?.["test:e2e"]?"npm run test:e2e":"")' "$r/package.json")"; fi
+  if [[ -x "$r/backend/gradlew" ]]; then bd=backend; bdev='./gradlew bootRun'; btest='./gradlew test'; elif [[ -x "$r/gradlew" ]]; then bd=.; bdev='./gradlew bootRun'; btest='./gradlew test'; elif [[ -f "$r/pom.xml" ]]; then bd=.; bdev='mvn spring-boot:run'; btest='mvn test'; fi
+  [[ ! -f "$r/compose.yaml" && ! -f "$r/compose.yml" && ! -f "$r/docker-compose.yml" && ! -f "$r/docker-compose.yaml" ]] || { dbs='docker compose up -d'; dbx='docker compose stop'; }
+  printf 'Detected frontend=%s backend=%s compose=%s\n' "${fd:-none}" "${bd:-none}" "$([[ -n "$dbs" ]] && printf yes || printf no)"
+  [[ -z "$fd" ]] || yes 'Use detected frontend?' Y || { fd=""; fdev=""; ftest=""; fbuild=""; fverify=""; fe2e=""; }
+  [[ -z "$bd" ]] || yes 'Use detected backend?' Y || { bd=""; bdev=""; btest=""; }
+  branch="$(prompt 'Deploy branch (blank disables restriction)' "$(git -C "$r" branch --show-current 2>/dev/null || true)")"
+  mkdir -p "$r/.herdr"
+  {
+    printf '# Generated by h init. Commands are trusted project-local configuration.\nPROJECT_NAME='; wq "$name"; printf '\nPROJECT_SLUG='; wq "$slug"
+    printf '\nFRONTEND_DIR='; wq "$fd"; printf '\nFRONTEND_DEV='; wq "$fdev"; printf '\nFRONTEND_TEST='; wq "$ftest"; printf '\nFRONTEND_BUILD='; wq "$fbuild"; printf '\nFRONTEND_VERIFY='; wq "$fverify"; printf '\nFRONTEND_E2E='; wq "$fe2e"
+    printf '\nFRONTEND_URL="http://localhost:5173"\nBACKEND_DIR='; wq "$bd"; printf '\nBACKEND_DEV='; wq "$bdev"; printf '\nBACKEND_TEST='; wq "$btest"
+    printf '\nBACKEND_HEALTH_URL="http://localhost:8080/actuator/health"\nDB_START='; wq "$dbs"; printf '\nDB_STOP='; wq "$dbx"
+    printf '\nDB_READY=""\nDEPLOY_MODE="none"\nDEPLOY_COMMAND=""\nDEPLOY_BRANCH='; wq "$branch"
+    printf '\nDEPLOY_WORKFLOW=""\nFRONTEND_PRODUCTION_URL=""\nBACKEND_PRODUCTION_HEALTH_URL=""\nREVIEWER_PROMPT=".herdr/reviewer-prompt.txt"\nDEFAULT_TEST_PROFILE="'
+    [[ -n "$btest" ]] && printf full || printf verify; printf '"\n'
+  } >"$f"
+  [[ -e "$r/.herdr/reviewer-prompt.txt" ]] || cp "$CORE_DIR/reviewer-prompt.txt" "$r/.herdr/reviewer-prompt.txt"
+  printf '[h] Created %s\n' "$f"
+}
+
+remote_cmd(){
+  local target="${1:-}" dry="${2:-}" file="$HERDR_DEV_HOME/hosts.conf" name alias path session mode found=0
+  [[ -n "$target" ]] || die "Usage: h remote <project-or-host> [--dry-run]"
+  if [[ -f "$file" ]]; then while IFS='|' read -r name alias path session mode; do [[ -z "$name" || "$name" == \#* ]] && continue; if [[ "$target" == "$name" || "$target" == "$alias" ]]; then found=1; break; fi; done <"$file"; fi
+  if [[ "$found" == 0 ]]; then alias="$target"; path=""; session=""; mode=herdr; fi
+  [[ "$alias" =~ ^[A-Za-z0-9._@-]+$ ]] || die "Invalid SSH alias"
+  if [[ "${mode:-ssh}" == herdr ]]; then local a=(herdr --remote "$alias"); [[ -z "$session" ]] || a+=(--session "$session"); [[ "$dry" == --dry-run ]] && { printf 'DRY RUN: '; printf '%q ' "${a[@]}"; printf '\n'; } || exec "${a[@]}"
+  else [[ -n "$path" && "$path" == /* && "$path" != *"'"* ]] || die "SSH mode needs an absolute path without single quotes"; [[ "$session" =~ ^[A-Za-z0-9._-]+$ ]] || die "Invalid session"; local rc="cd -- '$path' && exec herdr --session '$session'"; [[ "$dry" == --dry-run ]] && printf 'DRY RUN: ssh -t %q %q\n' "$alias" "$rc" || exec ssh -t "$alias" "$rc"; fi
+}
+remote_info(){ printf 'Host: %s\nHerdr: %s\n' "$(hostname)" "$(herdr --version 2>/dev/null || printf unavailable)"; command -v tailscale >/dev/null && tailscale status 2>/dev/null | head -n 3 || printf 'Tailscale: unavailable\n'; nc -z 127.0.0.1 22 >/dev/null 2>&1 && printf 'SSH: port 22 listening\n' || printf 'SSH: port 22 not detected\n'; command -v pmset >/dev/null && pmset -g custom 2>/dev/null | awk '/(sleep|hibernatemode|tcpkeepalive|powernap)/{print "  "$0}'; }
+
+find_pane(){ jq -r --arg t "$2" --arg l "$3" '[.result.panes[]?|select(.tab_id==$t and .label==$l)][0].pane_id//empty' <<<"$1"; }
+first_pane(){ jq -r --arg t "$2" '[.result.panes[]?|select(.tab_id==$t)][0].pane_id//empty' <<<"$1"; }
+ensure_tab(){
+  local label="$1" js; js="$(herdr tab list --workspace "$HERDR_WORKSPACE_ID")"; TAB="$(jq -r --arg l "$label" '[.result.tabs[]?|select(.label==$l)][0].tab_id//empty' <<<"$js")"; ROOT_PANE=""
+  if [[ -z "$TAB" ]]; then js="$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$ROOT" --label "$label" --no-focus)"; TAB="$(jv "$js" .result.tab.tab_id)"; ROOT_PANE="$(jv "$js" .result.root_pane.pane_id)"; fi
+  [[ -n "$TAB" ]] || die "Could not create tab $label"
+}
+ensure_pane(){
+  local tab="$1" label="$2" anchor="$3" direction="$4" js id; js="$(herdr pane list --workspace "$HERDR_WORKSPACE_ID")"; id="$(find_pane "$js" "$tab" "$label")"
+  if [[ -z "$id" ]]; then js="$(herdr pane split "$anchor" --direction "$direction" --ratio .50 --cwd "$ROOT" --no-focus)"; id="$(jv "$js" .result.pane.pane_id)"; [[ -n "$id" ]] || die "Could not create pane $label"; herdr pane rename "$id" "$label" >/dev/null; fi
+  printf %s "$id"
+}
+ensure_agent(){
+  local name="$1" pane="$2" js named pn pk result
+  js="$(herdr agent list)"; named="$(jq -r --arg n "$name" '[.result.agents[]?|select(.name==$n)][0].pane_id//empty' <<<"$js")"
+  if [[ -n "$named" ]]; then AGENT="$name"; AGENT_PANE="$named"; return; fi
+  pn="$(jq -r --arg p "$pane" '[.result.agents[]?|select(.pane_id==$p)][0].name//empty' <<<"$js")"; pk="$(jq -r --arg p "$pane" '[.result.agents[]?|select(.pane_id==$p)][0].agent//empty' <<<"$js")"
+  if [[ -n "$pn" && "$pk" == codex ]]; then AGENT="$pn"; AGENT_PANE="$pane"; return; fi
+  [[ -z "$pk" ]] || die "Pane contains non-Codex agent $pk"
+  result="$(herdr agent start "$name" --kind codex --pane "$pane" --timeout 120000)"; [[ -n "$(jv "$result" .result.agent.pane_id)" ]] || die "Codex did not start"; AGENT="$name"; AGENT_PANE="$pane"
+}
+review_layout(){
+  ensure_tab REVIEW; RTAB="$TAB"; local js anchor; js="$(herdr pane list --workspace "$HERDR_WORKSPACE_ID")"; RPANE="$(find_pane "$js" "$RTAB" 'REVIEW Codex')"
+  if [[ -z "$RPANE" ]]; then
+    if [[ -n "$ROOT_PANE" ]]; then RPANE="$ROOT_PANE"; herdr pane rename "$RPANE" 'REVIEW Codex' >/dev/null
+    else anchor="$(first_pane "$js" "$RTAB")"; [[ -n "$anchor" ]] || die "Review tab has no panes"; RPANE="$(ensure_pane "$RTAB" 'REVIEW Codex' "$anchor" right)"
+    fi
+  fi
+  TPANE="$(ensure_pane "$RTAB" 'Test / Logs' "$RPANE" down)"; ensure_agent "$REVIEWER" "$RPANE"; RAGENT="$AGENT"; RPANE="$AGENT_PANE"
+}
+dev_layout(){
+  ensure_tab DEV; DTAB="$TAB"; local js anchor; js="$(herdr pane list --workspace "$HERDR_WORKSPACE_ID")"; GPANE="$(find_pane "$js" "$DTAB" 'Git / Diff')"
+  if [[ -z "$GPANE" ]]; then
+    if [[ -n "$ROOT_PANE" ]]; then GPANE="$ROOT_PANE"; herdr pane rename "$GPANE" 'Git / Diff' >/dev/null
+    else anchor="$(first_pane "$js" "$DTAB")"; [[ -n "$anchor" ]] || die "Dev tab has no panes"; GPANE="$(ensure_pane "$DTAB" 'Git / Diff' "$anchor" right)"
+    fi
+  fi
+  IPANE="$(ensure_pane "$DTAB" 'IMPLEMENT Codex' "$GPANE" right)"; FPANE=""; BPANE=""
+  [[ -z "$FRONTEND_DEV" ]] || FPANE="$(ensure_pane "$DTAB" 'Frontend Server' "$GPANE" down)"
+  [[ -z "$BACKEND_DEV" ]] || BPANE="$(ensure_pane "$DTAB" 'Backend Server' "$IPANE" down)"
+}
+
+state_file(){ printf '%s/dev-%s.pid' "$STATE" "$1"; }
+managed_pid(){ local f pid pane; f="$(state_file "$1")"; [[ -f "$f" ]] || return 1; read -r pid pane <"$f" || return 1; [[ "$pid" =~ ^[0-9]+$ && "$pane" == "$2" ]] || return 1; kill -0 "$pid" 2>/dev/null || return 1; printf %s "$pid"; }
+ready(){ [[ -n "$1" ]] && curl --fail --silent --max-time 2 "$1" >/dev/null 2>&1; }
+wait_ready(){ local label="$1" url="$2" n=0; [[ -n "$url" ]] || return; while ((n<START_TIMEOUT_SECONDS)); do ready "$url" && { log "$label ready: $url"; return; }; sleep 1; n=$((n+1)); done; die "$label did not become ready"; }
+start_service(){
+  local service="$1" label="$2" pane="$3" url="$4" pid cmd; ready "$url" && { log "$label already reachable; left unchanged"; return; }
+  if pid="$(managed_pid "$service" "$pane")"; then log "$label starting (pid $pid)"; wait_ready "$label" "$url"; return; fi
+  cmd="$(qcmd "$CORE" _run-service "$ROOT" "$service")"; herdr pane run "$pane" "$cmd" >/dev/null || die "Could not start $label"; wait_ready "$label" "$url"
+}
+stop_service(){
+  local service="$1" label="$2" pane="$3" pid i; [[ -n "$pane" ]] || return
+  pid="$(managed_pid "$service" "$pane")" || { log "$label is not managed by h; left unchanged"; return; }
+  herdr pane send-keys "$pane" ctrl+c >/dev/null || die "Could not stop $label"
+  for i in {1..15}; do kill -0 "$pid" 2>/dev/null || { log "$label stopped"; return; }; sleep 1; done; die "$label did not stop; no forced kill attempted"
+}
+internal_service(){
+  ROOT="$1"; CONF="$ROOT/.herdr/project.conf"; cd "$ROOT"; load_project; local service="$2" dir cmd file child=""
+  case "$service" in frontend) dir="$FRONTEND_DIR"; cmd="$FRONTEND_DEV";; backend) dir="$BACKEND_DIR"; cmd="$BACKEND_DEV";; *) die "Bad service";; esac
+  mkdir -p "$STATE"; file="$(state_file "$service")"; printf '%s %s\n' "$$" "${HERDR_PANE_ID:-unknown}" >"$file"
+  cleanup(){ local s=$?; trap - EXIT INT TERM; [[ -z "$child" ]] || kill -INT "$child" 2>/dev/null || true; rm -f "$file"; exit "$s"; }; trap cleanup EXIT INT TERM
+  (cd "$ROOT/${dir:-.}" && bash -lc "$cmd") & child=$!; wait "$child"
+}
+
+test_cmd(){ case "$1" in frontend) printf %s "$FRONTEND_TEST";; verify) printf %s "${FRONTEND_VERIFY:-$FRONTEND_BUILD}";; backend) printf %s "$BACKEND_TEST";; e2e) printf %s "$FRONTEND_E2E";; esac; }
+test_dir(){ case "$1" in frontend|verify|e2e) printf %s "$FRONTEND_DIR";; backend) printf %s "$BACKEND_DIR";; esac; }
+valid_profile(){ [[ "$1" =~ ^(frontend|verify|backend|e2e|full)$ ]] || die "Unknown profile $1"; }
+one_test(){ local c; c="$(test_cmd "$1")"; [[ -n "$c" ]] || die "No command configured for $1"; run_cmd "$(test_dir "$1")" "$c"; }
+internal_tests(){
+  ROOT="$1"; CONF="$ROOT/.herdr/project.conf"; cd "$ROOT"; load_project; local profile="$2" id="$3" file status; valid_profile "$profile"; mkdir -p "$STATE"; file="$STATE/$id-$profile.log"
+  set +e; { printf '[h:%s:%s] started\n' "$PROJECT_SLUG" "$id"; if [[ "$profile" == full ]]; then one_test verify && one_test backend; else one_test "$profile"; fi; status=$?; printf '[h:%s:%s] result=%s\n[h:%s:%s] finished\n' "$PROJECT_SLUG" "$id" "$status" "$PROJECT_SLUG" "$id"; exit "$status"; } 2>&1 | tee "$file"
+  status=${PIPESTATUS[0]}; set -e; cp "$file" "$STATE/latest.log"; printf '%s\n' "$status" >"$STATE/$id-status"; exit "$status"
+}
+start_tests(){ local c; valid_profile "$1"; c="$(qcmd "$CORE" _run-tests "$ROOT" "$1" "$2")"; herdr pane run "$TPANE" "$c" >/dev/null; log "Started $1 tests"; }
+run_review(){
+  [[ -f "$PROMPT" ]] || die "Missing reviewer prompt: $PROMPT"; local p token marker out
+  p="$(<"$PROMPT")"; token="$(date +%Y%m%d%H%M%S)-$$"; marker="REVIEW_RESULT_$token:"; p+=$'\n'; p+="Final line: '$marker FAIL', '$marker PASS_WITH_NOTES', or '$marker PASS'."
+  herdr agent prompt "$RAGENT" "$p" --wait --timeout "$WAIT_TIMEOUT_MS" >/dev/null; out="$(herdr agent read "$RAGENT" --source recent-unwrapped --lines 200)"; printf '\n===== REVIEW =====\n%s\n' "$out"
+  REVIEW_OUT="$out"; VERDICT="$(awk -v m="$marker" '$1==m&&($2=="PASS"||$2=="PASS_WITH_NOTES"||$2=="FAIL"){v=$2}END{print v}' <<<"$out")"; mkdir -p "$STATE"; printf '%s\n' "$out" >"$STATE/latest-review.log"
+}
+all_once(){
+  local profile="$1" id marker status cycle_tree current_tree; cycle_tree="$(snapshot)"; id="$(date +%Y%m%d-%H%M%S)-$$-$RANDOM"; start_tests "$profile" "$id"; run_review; marker="[h:$PROJECT_SLUG:$id] finished"
+  herdr pane wait-output "$TPANE" --match "$marker" --source recent-unwrapped --lines 300 --timeout "$WAIT_TIMEOUT_MS" >/dev/null; printf '\n===== TESTS =====\n'; herdr pane read "$TPANE" --source recent-unwrapped --lines 160
+  [[ -f "$STATE/$id-status" ]] || { WHY='missing test result'; return 1; }; status="$(<"$STATE/$id-status")"; [[ "$status" == 0 ]] || { WHY="tests failed ($status)"; return 1; }; [[ "$VERDICT" == PASS || "$VERDICT" == PASS_WITH_NOTES ]] || { WHY='review failed'; return 1; }
+  current_tree="$(snapshot)"; [[ "$cycle_tree" == "$current_tree" ]] || { WHY='working tree changed during verification'; return 1; }; VERIFIED_TREE="$cycle_tree"
+}
+all_cmd(){
+  local profile="$1" autofix="$2" st; VERIFIED_TREE=""; review_layout; all_once "$profile" && { log "Verification passed ($VERDICT)"; return; }
+  if [[ "$autofix" == 1 && "$VERDICT" == FAIL ]]; then dev_layout; ensure_agent "$IMPLEMENTER" "$IPANE"; herdr agent prompt "$AGENT" "Fix only BLOCKER/MAJOR findings below. Test changes. Do not commit, push, or deploy.\n\n$REVIEW_OUT" --wait --timeout "$WAIT_TIMEOUT_MS" >/dev/null; st="$(herdr agent get "$AGENT" | jq -r '.result.agent.agent_status//"unknown"')"; [[ "$st" != blocked ]] || die "Implementer needs input"; all_once "$profile" && { log "Verification passed after autofix ($VERDICT)"; return; }; fi
+  die "${WHY:-verification failed}"
+}
+
+command_executable(){
+  local token; local -a tokens=(); read -r -a tokens <<<"$1"
+  for token in "${tokens[@]}"; do case "$token" in env|command|exec|-*|*=*) continue;; if|then|else|elif|fi|for|while|until|case|'{'|'(') return 0;; *) printf %s "$token"; return;; esac; done
+}
+need_configured(){
+  local label="$1" dir="$2" cmd="$3" exe; [[ -n "$cmd" ]] || return 0; exe="$(command_executable "$cmd")"; [[ -n "$exe" ]] || return 0
+  if [[ "$exe" == */* ]]; then [[ -x "$ROOT/${dir:-.}/$exe" ]] || die "$label executable missing or not executable: $exe"
+  else command -v "$exe" >/dev/null 2>&1 || die "$label requires command: $exe"
+  fi
+}
+project_prereqs(){
+  local label dir cmd
+  while IFS='|' read -r label dir cmd; do need_configured "$label" "$dir" "$cmd"; done <<EOF
+FRONTEND_DEV|$FRONTEND_DIR|$FRONTEND_DEV
+FRONTEND_TEST|$FRONTEND_DIR|$FRONTEND_TEST
+FRONTEND_BUILD|$FRONTEND_DIR|$FRONTEND_BUILD
+FRONTEND_VERIFY|$FRONTEND_DIR|$FRONTEND_VERIFY
+FRONTEND_E2E|$FRONTEND_DIR|$FRONTEND_E2E
+BACKEND_DEV|$BACKEND_DIR|$BACKEND_DEV
+BACKEND_TEST|$BACKEND_DIR|$BACKEND_TEST
+DB_START|.|$DB_START
+DB_STOP|.|$DB_STOP
+DB_READY|.|$DB_READY
+EOF
+  [[ "$DEPLOY_MODE" != command ]] || need_configured DEPLOY_COMMAND . "$DEPLOY_COMMAND"
+  if [[ -n "$FRONTEND_DEV" ]]; then [[ ! -f "$ROOT/$FRONTEND_DIR/package.json" || -d "$ROOT/$FRONTEND_DIR/node_modules" ]] || die "Frontend dependencies missing; run npm install"; fi
+  if [[ "$BACKEND_DEV" == *gradlew* ]]; then need java; [[ -x "$ROOT/$BACKEND_DIR/gradlew" ]] || die "Gradle wrapper missing or not executable"; fi
+  if [[ "$DB_START" == docker* ]]; then need docker; docker compose version >/dev/null 2>&1 || die "Docker Compose unavailable"; fi
+}
+dev_cmd(){
+  herdr_ctx; need herdr; need jq; need codex; need curl; project_prereqs; dev_layout; review_layout
+  [[ -z "$DB_START" ]] || run_cmd . "$DB_START"
+  if [[ -n "$DB_READY" ]]; then local i; for i in {1..30}; do run_cmd . "$DB_READY" >/dev/null 2>&1 && break; sleep 1; done; run_cmd . "$DB_READY" >/dev/null 2>&1 || die "Database not ready"; fi
+  ensure_agent "$IMPLEMENTER" "$IPANE"; herdr pane run "$GPANE" 'git status --short --branch' >/dev/null
+  [[ -z "$FRONTEND_DEV" ]] || start_service frontend Frontend "$FPANE" "$FRONTEND_URL"; [[ -z "$BACKEND_DEV" ]] || start_service backend Backend "$BPANE" "$BACKEND_HEALTH_URL"; log "Development environment ready"
+}
+stop_cmd(){ herdr_ctx; dev_layout; [[ -z "$FRONTEND_DEV" ]] || stop_service frontend Frontend "$FPANE"; [[ -z "$BACKEND_DEV" ]] || stop_service backend Backend "$BPANE"; log "Managed services stopped; database and Codex preserved"; }
+status_cmd(){
+  printf 'Project: %s\nRoot:    %s\nConfig:  %s\nGit:     ' "$PROJECT_NAME" "$ROOT" "$CONF"; git status --short --branch | head -n1
+  [[ -z "$FRONTEND_DEV" ]] || printf 'Frontend: %s\n' "$(ready "$FRONTEND_URL" && printf 'ready %s' "$FRONTEND_URL" || printf 'not reachable')"
+  [[ -z "$BACKEND_DEV" ]] || printf 'Backend:  %s\n' "$(ready "$BACKEND_HEALTH_URL" && printf 'ready %s' "$BACKEND_HEALTH_URL" || printf 'not reachable')"
+  printf 'Herdr:   %s\n' "$(herdr status 2>/dev/null | head -n1 || printf 'not running')"
+}
+
+snapshot(){ local d i o e t; d="$(mktemp -d "${TMPDIR:-/tmp}/herdr-dev.XXXXXX")"; i="$d/index"; o="$d/objects"; mkdir "$o"; e="$(git rev-parse --absolute-git-dir)/objects"; GIT_INDEX_FILE="$i" GIT_OBJECT_DIRECTORY="$o" GIT_ALTERNATE_OBJECT_DIRECTORIES="$e" git read-tree HEAD; GIT_INDEX_FILE="$i" GIT_OBJECT_DIRECTORY="$o" GIT_ALTERNATE_OBJECT_DIRECTORIES="$e" git add -A; t="$(GIT_INDEX_FILE="$i" GIT_OBJECT_DIRECTORY="$o" GIT_ALTERNATE_OBJECT_DIRECTORIES="$e" git write-tree)"; rm -rf -- "$d"; printf %s "$t"; }
+repo_url(){ git remote get-url origin 2>/dev/null | sed -E 's#^git@github.com:#https://github.com/#;s#\.git$##'; }
+ship_preflight(){
+  local branch="$1" repo slug rules; repo="$(repo_url)"
+  case "$DEPLOY_MODE" in
+    none|'') :;;
+    command) [[ -n "$DEPLOY_COMMAND" ]] || die "DEPLOY_COMMAND is empty"; need_configured DEPLOY_COMMAND . "$DEPLOY_COMMAND";;
+    github-actions) [[ "$repo" == https://github.com/*/* ]] || die "GitHub Actions deployment requires a GitHub origin: $repo"; [[ -n "$DEPLOY_WORKFLOW" ]] || die "DEPLOY_WORKFLOW is empty";;
+    *) die "Unsupported DEPLOY_MODE $DEPLOY_MODE";;
+  esac
+  [[ "$repo" == https://github.com/*/* ]] || return 0
+  command -v gh >/dev/null 2>&1 || die "GitHub CLI is required to verify deployment and branch policy before push"
+  gh auth status >/dev/null 2>&1 || die "Authenticated GitHub CLI is required before commit or push"
+  slug="${repo#https://github.com/}"
+  if [[ "$DEPLOY_MODE" == github-actions ]]; then gh workflow view "$DEPLOY_WORKFLOW" --repo "$slug" >/dev/null 2>&1 || die "Could not verify configured GitHub Actions workflow: $DEPLOY_WORKFLOW"; fi
+  rules="$(gh api "repos/$slug/rules/branches/$branch")" || die "Could not verify GitHub branch policy for $branch"
+  if jq -e '[.[]? | select(.enforcement == "active") | .rules[]? | select(.type == "pull_request")] | length > 0' <<<"$rules" >/dev/null; then
+    die "GitHub rules require a pull request for $branch; direct ship is blocked"
+  fi
+}
+health(){
+  local failed=0 label url pair
+  for pair in "Frontend|$FRONTEND_PRODUCTION_URL" "Backend|$BACKEND_PRODUCTION_HEALTH_URL"; do label="${pair%%|*}"; url="${pair#*|}"; [[ -z "$url" ]] && continue; if curl --fail --silent --show-error --max-time 15 "$url" >/dev/null; then printf '%s: OK %s\n' "$label" "$url"; else printf '%s: FAIL %s\n' "$label" "$url" >&2; failed=1; fi; done
+  return "$failed"
+}
+deploy_status(){
+  local repo slug; repo="$(repo_url)"; slug="${repo#https://github.com/}"
+  if [[ -n "$DEPLOY_WORKFLOW" && "$repo" == https://github.com/* ]]; then if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then gh run list --repo "$slug" --workflow "$DEPLOY_WORKFLOW" --branch "$DEPLOY_BRANCH" --limit 1; else printf 'Actions: https://github.com/%s/actions\n' "$slug"; fi; fi
+  health
+}
+wait_actions(){
+  local sha="$1" slug="$2" elapsed=0 run="" url status conclusion
+  if ! command -v gh >/dev/null || ! gh auth status >/dev/null 2>&1; then
+    die "Push succeeded, but authenticated GitHub Actions tracking is unavailable: https://github.com/$slug/actions/workflows/$DEPLOY_WORKFLOW"
+  fi
+  while ((elapsed<90)); do run="$(gh run list --repo "$slug" --workflow "$DEPLOY_WORKFLOW" --commit "$sha" --json databaseId --jq '.[0].databaseId//empty' 2>/dev/null || true)"; [[ -n "$run" ]] && break; sleep 3; elapsed=$((elapsed+3)); done
+  [[ -n "$run" ]] || die "Push succeeded, but its Actions run was not found"
+  url="$(gh run view "$run" --repo "$slug" --json url --jq .url)"; printf 'Deployment: %s\n' "$url"
+  while ((elapsed<DEPLOY_TIMEOUT_SECONDS)); do read -r status conclusion < <(gh run view "$run" --repo "$slug" --json status,conclusion --jq '[.status,(.conclusion//"pending")]|@tsv'); if [[ "$status" == completed ]]; then [[ "$conclusion" == success ]] || die "Deployment failed ($conclusion): $url"; return; fi; sleep 10; elapsed=$((elapsed+10)); done
+  die "Timed out waiting for deployment: $url"
+}
+ship_cmd(){
+  local yes=0 dry=0 autofix=0 x branch after msg sha repo slug ahead behind
+  for x in "$@"; do case "$x" in --yes) yes=1;; --dry-run) dry=1;; --autofix) autofix=1;; *) die "Unknown ship option $x";; esac; done
+  [[ -n "$(git status --porcelain)" ]] || die "There are no changes to ship"; git diff --check HEAD; [[ -z "$(git ls-files -u)" ]] || die "Unresolved conflicts"
+  [[ -z "$(git ls-files --others --exclude-standard)" ]] || die "Untracked files must be added or removed before review"
+  branch="$(git branch --show-current)"; [[ -n "$branch" ]] || die "Detached HEAD"; [[ -z "$DEPLOY_BRANCH" || "$branch" == "$DEPLOY_BRANCH" ]] || die "Expected branch $DEPLOY_BRANCH, got $branch"
+  ship_preflight "$branch"
+  if [[ "$dry" == 1 ]]; then git status --short; git diff --stat HEAD; printf '\nDRY RUN: verify=%s, review, commit, push, deploy=%s, health checks\n' "$DEFAULT_TEST_PROFILE" "$DEPLOY_MODE"; return; fi
+  git fetch --quiet origin "$branch"; read -r ahead behind < <(git rev-list --left-right --count "HEAD...origin/$branch"); [[ "$ahead" == 0 && "$behind" == 0 ]] || die "Local branch must match origin/$branch"
+  herdr_ctx; all_cmd "$DEFAULT_TEST_PROFILE" "$autofix"; after="${VERIFIED_TREE:-}"; [[ -n "$after" ]] || die "Verification did not produce a reviewed tree"; [[ "$(snapshot)" == "$after" ]] || die "Working tree changed after verification"
+  msg="chore: $PROJECT_NAME 변경사항 반영"; git status --short; git diff --stat HEAD; printf 'Commit: %s\n' "$msg"
+  if [[ "$yes" != 1 ]]; then local a; read -r -p 'Commit, push, and deploy these changes? [y/N] ' a; [[ "$a" == y || "$a" == Y ]] || die "Cancelled before commit"; fi
+  git add -A; [[ "$(git write-tree)" == "$after" ]] || die "Staged tree differs from reviewed tree"; git commit -m "$msg"; sha="$(git rev-parse HEAD)"; git push origin "HEAD:$branch"
+  case "$DEPLOY_MODE" in none|'') :;; command) [[ -n "$DEPLOY_COMMAND" ]] || die "DEPLOY_COMMAND is empty"; run_cmd . "$DEPLOY_COMMAND";; github-actions) repo="$(repo_url)"; slug="${repo#https://github.com/}"; wait_actions "$sha" "$slug";; *) die "Unsupported DEPLOY_MODE $DEPLOY_MODE";; esac
+  health || die "Production health failed after push"; log "SHIP PUSHED $sha"
+}
+
+task_name(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]{0,19}$ ]] || die "Task name: 1-20 lowercase letters, numbers, hyphens"; }
+task_open(){
+  local n="$1" b p js pane actual; task_name "$n"; herdr_ctx; b="task/$n"; p="$TASK_ROOT/$n"
+  if [[ -d "$p" ]] && git -C "$p" rev-parse --is-inside-work-tree >/dev/null 2>&1; then actual="$(git -C "$p" branch --show-current)"; [[ "$actual" == "$b" ]] || die "$p uses branch $actual"; js="$(herdr worktree open --workspace "$HERDR_WORKSPACE_ID" --cwd "$ROOT" --path "$p" --label "TASK $n" --no-focus --trust-repository)"
+  else [[ ! -e "$p" ]] || die "Task path exists but is not a worktree"; [[ -z "$(git status --porcelain)" ]] || die "Source checkout has uncommitted changes"; git show-ref --verify --quiet "refs/heads/$b" && die "Branch exists: $b"; mkdir -p "$TASK_ROOT"; js="$(herdr worktree create --workspace "$HERDR_WORKSPACE_ID" --cwd "$ROOT" --branch "$b" --base HEAD --path "$p" --label "TASK $n" --no-focus --trust-repository)"; fi
+  pane="$(jv "$js" .result.root_pane.pane_id)"; [[ -n "$pane" ]] || die "Herdr returned no task pane"; ensure_agent "$PROJECT_SLUG-task-$n" "$pane"; log "Task ready: $p ($b)"
+}
+task_clean(){
+  local n="$1" b p js wid; task_name "$n"; herdr_ctx; b="task/$n"; p="$TASK_ROOT/$n"; [[ -d "$p" ]] || die "Task worktree missing"; [[ -z "$(git -C "$p" status --porcelain)" ]] || die "Task worktree is dirty"; git merge-base --is-ancestor "$b" HEAD || die "Task branch is not merged"
+  js="$(herdr worktree list --cwd "$ROOT" --trust-repository)"; wid="$(jq -r --arg p "$p" '[.result.worktrees[]?|select(.path==$p)][0].open_workspace_id//empty' <<<"$js")"; if [[ -n "$wid" ]]; then herdr worktree remove --workspace "$wid" --trust-repository >/dev/null; else git worktree remove "$p"; fi; git branch -d "$b"; log "Removed task $n"
+}
+notify(){ "$CORE_DIR/notify" "$PROJECT_NAME" "$1" 2>/dev/null || true; }
+watch_cmd(){
+  local d js n p s k old; d="$(mktemp -d "${TMPDIR:-/tmp}/herdr-watch.XXXXXX")"; trap 'rm -rf -- "$d"' EXIT
+  while true; do js="$(herdr agent list)"; while IFS=$'\t' read -r n p s; do [[ -n "$p" ]] || continue; k="$(tr ':/' '__' <<<"$p")"; old=""; [[ ! -f "$d/$k" ]] || old="$(<"$d/$k")"; [[ -z "$old" || "$old" == "$s" ]] || case "$s" in blocked|done) notify "$n: $s";; esac; printf %s "$s" >"$d/$k"; done < <(jq -r '.result.agents[]?|[.name,.pane_id,(.agent_status//"unknown")]|@tsv' <<<"$js"); sleep 3; done
+}
+doctor(){ local c missing=0; for c in git herdr jq codex curl; do if command -v "$c" >/dev/null; then printf '%-8s OK\n' "$c"; else printf '%-8s MISSING\n' "$c"; missing=1; fi; done; [[ -z "$FRONTEND_DIR" || -d "$ROOT/$FRONTEND_DIR" ]] || die "Frontend directory missing"; [[ -z "$BACKEND_DIR" || -d "$ROOT/$BACKEND_DIR" ]] || die "Backend directory missing"; project_prereqs; printf 'Config   OK (%s)\n' "$CONF"; return "$missing"; }
+
+main(){
+  local cmd="${1:-help}" profile id autofix arg; shift || true
+  case "$cmd" in
+    help|-h|--help) usage;; init) init_cmd;; remote) remote_cmd "${1:-}" "${2:-}";; remote-info) remote_info;;
+    _run-service) internal_service "$@";; _run-tests) internal_tests "$@";;
+    *) load_project; cd "$ROOT"; case "$cmd" in
+      doctor) doctor;; dev) dev_cmd;; status) status_cmd;; stop) stop_cmd;; restart) stop_cmd; dev_cmd;;
+      setup) herdr_ctx; review_layout;; review) herdr_ctx; review_layout; run_review;;
+      test) herdr_ctx; review_layout; profile="${1:-$DEFAULT_TEST_PROFILE}"; id="$(date +%Y%m%d-%H%M%S)-$$"; start_tests "$profile" "$id";;
+      all) herdr_ctx; profile="$DEFAULT_TEST_PROFILE"; autofix=0; for arg in "$@"; do if [[ "$arg" == --autofix ]]; then autofix=1; else profile="$arg"; fi; done; all_cmd "$profile" "$autofix";;
+      autofix) herdr_ctx; all_cmd "${1:-$DEFAULT_TEST_PROFILE}" 1;; ship) ship_cmd "$@";; deploy-status) deploy_status;;
+      results) [[ ! -f "$STATE/latest-review.log" ]] || { printf '===== REVIEW =====\n'; tail -n 200 "$STATE/latest-review.log"; }; [[ ! -f "$STATE/latest.log" ]] || { printf '===== TESTS =====\n'; tail -n 160 "$STATE/latest.log"; };;
+      watch) herdr_ctx; watch_cmd;; task) [[ $# == 1 ]] || die "Usage: h task <name>"; task_open "$1";; task-clean) [[ $# == 1 ]] || die "Usage: h task-clean <name>"; task_clean "$1";;
+      *) usage >&2; die "Unknown command $cmd";; esac;;
+  esac
+}
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi

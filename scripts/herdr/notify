@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -u
+title="${1:-Herdr}"
+body="${2:-}"
+if [[ "${HERDR_DEV_NOTIFY_DRY_RUN:-0}" == 1 ]]; then
+  printf '[h-notify] %s: %s\n' "$title" "$body"
+  exit 0
+fi
+[[ "$(uname -s 2>/dev/null || true)" == Darwin ]] || exit 0
+command -v osascript >/dev/null 2>&1 || exit 0
+osascript - "$title" "$body" >/dev/null 2>&1 <<'APPLESCRIPT' || true
+on run argv
+  display notification (item 2 of argv) with title (item 1 of argv)
+end run
+APPLESCRIPT
