@@ -93,6 +93,16 @@ class RoomParticipantIntegrationTest {
         mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).cookie(participantCookie))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.roomCode").doesNotExist());
+
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).param("roomCode", code).cookie(participantCookie))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.participantJoined", is(true)))
+            .andExpect(jsonPath("$.roomCode").doesNotExist());
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).param("roomCode", "INVALID").cookie(participantCookie))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code", is("ROOM_CODE_MISMATCH")));
+        mockMvc.perform(get("/api/rooms/{roomId}/state", roomId).param("roomCode", code))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -1,8 +1,10 @@
 import { sharingApi } from '../api/sharingApi';
 import type { RoomSnapshot } from '../domain/types';
 
-export async function loadRoomSnapshot(roomId: string): Promise<RoomSnapshot> {
-  const roomState = await sharingApi.getState(roomId);
+export async function loadRoomSnapshot(roomId: string, roomCode?: string): Promise<RoomSnapshot> {
+  const roomState = roomCode
+    ? await sharingApi.getState(roomId, roomCode)
+    : await sharingApi.getState(roomId);
   const snapshot: RoomSnapshot = {
     roomState,
     participants: [],

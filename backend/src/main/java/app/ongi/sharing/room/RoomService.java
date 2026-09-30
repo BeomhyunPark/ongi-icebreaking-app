@@ -80,8 +80,16 @@ public class RoomService {
 
     @Transactional(readOnly = true)
     public RoomStateResponse state(RoomAccess access) {
+        return state(access, null);
+    }
+
+    @Transactional(readOnly = true)
+    public RoomStateResponse state(RoomAccess access, String expectedRoomCode) {
         Room room = roomRepository.findById(access.roomId())
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "ROOM_SESSION_REQUIRED", "이 모임에 다시 참여해주세요."));
+        if (expectedRoomCode != null && !room.getCode().equals(RoomCodeGenerator.normalize(expectedRoomCode))) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "ROOM_CODE_MISMATCH", "다른 모임의 초대 링크예요.");
+        }
         long participantCount = participantRepository.countByRoomId(room.getId());
         long completedCount = participantRepository.countByRoomIdAndResponseCompletedTrue(room.getId());
         boolean selfCompleted = access.participantId() != null && participantRepository

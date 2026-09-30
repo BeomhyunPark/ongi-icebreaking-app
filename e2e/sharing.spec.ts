@@ -104,6 +104,14 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
         await expect(peer.locator('textarea')).toBeVisible();
       }),
     );
+    // Opening the invitation again must resume the cookie-scoped participant,
+    // including unsaved drafts, rather than trying to join with a duplicate name.
+    const invitation = `/?activity=anonymous-sharing#join=${encodeURIComponent(roomCode)}`;
+    await pages[2].getByRole('textbox').fill('QR 재입장 후에도 유지할 초안');
+    await pages[2].goto('/');
+    await pages[2].goto(invitation);
+    await expect(pages[2].getByRole('textbox')).toHaveValue('QR 재입장 후에도 유지할 초안');
+    await expect(pages[2]).toHaveURL(new RegExp(`#room=${roomId}$`));
     // Joining as a host opens its writing screen as well.
     if (await page.getByRole('button', { name: '내 답변 작성하기', exact: true }).count()) {
       await page.getByRole('button', { name: '내 답변 작성하기', exact: true }).click();
@@ -121,7 +129,15 @@ test('isolated users write concurrently, reconnect, reveal, and advance without 
     );
     await expect(page.locator('.anonymous-sharing-progress-summary strong')).toHaveText('3/3');
     await page.getByRole('button', { name: '참여자 입장 마감', exact: true }).click();
+    await pages[2].goto('/');
+    await pages[2].goto(invitation);
+    await expect(pages[2].getByRole('heading', { name: '이제 서로를 기다려요' })).toBeVisible();
+    await expect(pages[2]).toHaveURL(new RegExp(`#room=${roomId}$`));
     await page.getByRole('button', { name: '모두 준비됐어요 · 나눔 시작', exact: true }).click();
+    await pages[2].goto('/');
+    await pages[2].goto(invitation);
+    await expect(pages[2].locator('.anonymous-sharing-round')).toHaveText('1 / 3번째 이야기');
+    await expect(pages[2]).toHaveURL(new RegExp(`#room=${roomId}$`));
     const seenNames = new Set<string>();
     for (let round = 0; round < 3; round++) {
       await Promise.all(

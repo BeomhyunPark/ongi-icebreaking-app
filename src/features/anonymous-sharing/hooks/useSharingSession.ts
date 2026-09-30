@@ -15,6 +15,7 @@ export function useSharingSession(
   initialRoomId: string | null,
   busy: boolean,
   setError: (message: string) => void,
+  initialJoinCode: string | null = null,
 ) {
   const [session, dispatch] = useReducer(
     sharingSessionReducer,
@@ -34,10 +35,10 @@ export function useSharingSession(
   }, []);
 
   const hydrateRoom = useCallback(
-    async (roomId: string) => {
+    async (roomId: string, expectedRoomCode?: string) => {
       const revision = ++requestRevision.current;
       try {
-        const snapshot = await loadRoomSnapshot(roomId);
+        const snapshot = await loadRoomSnapshot(roomId, expectedRoomCode);
         if (revision !== requestRevision.current) return;
         const room = snapshot.roomState;
         if (room.responseCompleted || room.status === 'SHARING' || room.status === 'COMPLETED') {
@@ -56,12 +57,18 @@ export function useSharingSession(
         setError('');
       } catch (error) {
         if (revision !== requestRevision.current) return;
+        if (expectedRoomCode && error instanceof SharingApiError && error.code === 'ROOM_CODE_MISMATCH') {
+          // Keep the previous room recoverable while opening a different invitation.
+          dispatch({ type: 'RESET' });
+          return;
+        }
         if (error instanceof SharingApiError && error.status === 401) {
           removeDraft(roomId);
           draft.current = {};
           clearRoomReference();
-          replaceSharingHash(null);
+          replaceSharingHash(expectedRoomCode ? 'join' : null, expectedRoomCode);
           dispatch({ type: 'RESET' });
+          if (expectedRoomCode) return;
         }
         setError(error instanceof SharingApiError ? error.message : '요청을 처리하지 못했어요.');
       } finally {
@@ -72,9 +79,9 @@ export function useSharingSession(
   );
 
   useEffect(() => {
-    if (initialRoomId) void hydrateRoom(initialRoomId);
+    if (initialRoomId) void hydrateRoom(initialRoomId, initialJoinCode ?? undefined);
     return invalidate;
-  }, [initialRoomId, hydrateRoom, invalidate]);
+  }, [initialRoomId, initialJoinCode, hydrateRoom, invalidate]);
 
   const persistAnswers = useCallback((roomId: string, values: Record<string, string>) => {
     const generation = lifecycle.current;

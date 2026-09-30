@@ -22,7 +22,7 @@ function errorMessage(error: unknown): string {
 export function useAnonymousSharingController(onBackHome: () => void) {
   const initialHash = useMemo(readSharingHash, []);
   const initialRoomId = useMemo(
-    () => initialHash.roomId ?? (initialHash.joinCode ? null : loadRoomReference()),
+    () => initialHash.roomId ?? loadRoomReference(),
     [initialHash],
   );
   const [entryMode, setEntryMode] = useState<EntryMode>(initialHash.joinCode ? 'JOIN' : 'HOME');
@@ -39,7 +39,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
   const [cancelConfirming, setCancelConfirming] = useState(false);
   const [leaveConfirming, setLeaveConfirming] = useState(false);
   const leaving = useRef(false);
-  const session = useSharingSession(initialRoomId, busy, setError);
+  const session = useSharingSession(initialRoomId, busy, setError, initialHash.joinCode);
   const {
     roomId,
     roomState,
@@ -69,7 +69,7 @@ export function useAnonymousSharingController(onBackHome: () => void) {
     }
   }, [completeSession, hydrateRoom, roomId]);
   const reconnecting = useRoomEvents(
-    roomState?.status === 'COMPLETED' ? null : roomId,
+    !roomState || roomState.status === 'COMPLETED' ? null : roomId,
     refreshCurrentRoom,
   );
 

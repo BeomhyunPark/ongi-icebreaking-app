@@ -40,6 +40,55 @@ it('자동 저장 전에 재진입해도 초안을 복원하고 실시간 갱신
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('사라지면 안 되는 답변');
 });
 
+it.each(['WRITING', 'LOCKED', 'SHARING'] as const)('%s 상태에서 같은 QR로 재진입하면 새 입장 없이 기존 참여를 복원한다', async (status) => {
+  const state = vi.spyOn(sharingApi, 'getState').mockResolvedValue({ ...room, status });
+  vi.spyOn(sharingApi, 'getQuestions').mockResolvedValue({ questions: [{ id: 'q1', position: 1, prompt: '첫 질문' }] });
+  vi.spyOn(sharingApi, 'getMyResponses').mockResolvedValue({ answers: [{ questionId: 'q1', answer: '기존 답변' }], completed: false });
+  vi.spyOn(sharingApi, 'getCurrentSharing').mockResolvedValue({
+    state: 'ANONYMOUS', sequence: 0, total: 2, answers: [{ question: '첫 질문', answer: '기존 답변' }],
+    canReveal: false, roomVersion: 2,
+  });
+  const join = vi.spyOn(sharingApi, 'joinRoom');
+  const view = render(<AnonymousSharingApp onBackHome={() => {}} />);
+  await screen.findByText(status === 'SHARING' ? '기존 답변' : '첫 질문');
+  view.unmount();
+  window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
+  state.mockClear();
+  render(<AnonymousSharingApp onBackHome={() => {}} />);
+  if (status === 'SHARING') {
+    await screen.findByText('기존 답변');
+  } else {
+    expect((await screen.findByRole('textbox') as HTMLTextAreaElement).value).toBe('기존 답변');
+  }
+  expect(state).toHaveBeenCalledWith(id, '7KFM-3QPX');
+  expect(join).not.toHaveBeenCalled();
+  expect(window.location.hash).toBe(`#room=${id}`);
+});
+
+it('다른 모임 QR은 이전 모임으로 복원하지 않고 초대받은 모임의 입장 화면을 연다', async () => {
+  localStorage.setItem('ongi.anonymous-sharing.room.v1', id);
+  window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
+  vi.spyOn(sharingApi, 'getState').mockRejectedValue(new SharingApiError(404, 'ROOM_CODE_MISMATCH', '다른 모임의 초대 링크예요.'));
+  const questions = vi.spyOn(sharingApi, 'getQuestions');
+  render(<AnonymousSharingApp onBackHome={() => {}} />);
+  await screen.findByLabelText('이름');
+  expect(questions).not.toHaveBeenCalled();
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(localStorage.getItem('ongi.anonymous-sharing.room.v1')).toBe(id);
+  expect(window.location.hash).toBe('#join=7KFM-3QPX');
+});
+
+it('QR 재진입 시 만료된 세션은 초대 코드를 유지하고 새 입장을 안내한다', async () => {
+  localStorage.setItem('ongi.anonymous-sharing.room.v1', id);
+  window.history.replaceState({}, '', '/?activity=anonymous-sharing#join=7KFM-3QPX');
+  vi.spyOn(sharingApi, 'getState').mockRejectedValue(new SharingApiError(401, 'ROOM_SESSION_REQUIRED', '이 모임에 다시 참여해주세요.'));
+  render(<AnonymousSharingApp onBackHome={() => {}} />);
+  await screen.findByLabelText('이름');
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(localStorage.getItem('ongi.anonymous-sharing.room.v1')).toBeNull();
+  expect(window.location.hash).toBe('#join=7KFM-3QPX');
+});
+
 it('완료 후 다시 수정하면 작성 화면을 열고 다시 완료할 수 있다', async () => {
   let completed = true;
   vi.spyOn(sharingApi, 'getState').mockImplementation(async () => ({ ...room, responseCompleted: completed }));

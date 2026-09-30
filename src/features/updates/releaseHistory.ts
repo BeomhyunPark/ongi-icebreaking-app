@@ -15,11 +15,21 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.6.2',
+    date: '2026.09.30',
+    title: 'QR로 다시 이어가는 나눔',
+    summary: '잠시 나갔다가 같은 QR로 돌아오면 기존 모임을 이어갈 수 있어요.',
+    current: true,
+    changes: [
+      { title: 'QR 재입장 복원', description: '같은 브라우저에서 모임 QR을 다시 열면 기존 답변과 참여 상태를 불러와요. 입장 마감 후나 나눔 중에도 돌아올 수 있어요.' },
+      { title: '초대 모임 확인', description: '다른 모임의 QR을 열면 해당 모임의 입장 화면으로 안내해요.' },
+    ],
+  },
+  {
     version: 'v2.6.1',
     date: '2026.09.21',
     title: '자리를 비워도 이어지는 나눔',
     summary: '작성자가 먼저 자리를 떠나도 남은 사람끼리 나눔을 끝까지 이어갈 수 있어요.',
-    current: true,
     changes: [
       { title: '빈자리 건너뛰기', description: '작성자가 돌아오지 못하면 진행자가 확인 후 해당 이야기를 건너뛰고 다음 사람으로 이어가요.' },
       { title: '종료 즉시 정보 삭제', description: '모임을 종료하면 답변과 참여 정보뿐 아니라 접속 세션도 바로 삭제해요.' },

@@ -81,7 +81,9 @@ export const sharingApi = {
     `/api/rooms/${roomId}/leave`, { method: 'POST' },
   ),
 
-  getState: (roomId: string) => request<RoomState>(`/api/rooms/${roomId}/state`),
+  getState: (roomId: string, roomCode?: string) => request<RoomState>(
+    `/api/rooms/${roomId}/state${roomCode ? `?roomCode=${encodeURIComponent(roomCode)}` : ''}`,
+  ),
 
   getParticipants: (roomId: string) => request<{ participants: ParticipantStatus[] }>(
     `/api/rooms/${roomId}/participants`,
