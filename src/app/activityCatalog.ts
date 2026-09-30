@@ -4,7 +4,8 @@ export type ActivityId =
   | 'balance-game'
   | 'ideal-world-cup'
   | 'group-picker'
-  | 'anonymous-sharing';
+  | 'anonymous-sharing'
+  | 'manitto';
 
 export type ActivityKind =
   | '성격검사'
@@ -29,6 +30,17 @@ export type Activity = {
 };
 
 export const ACTIVITIES: readonly Activity[] = [
+  {
+    id: 'manitto',
+    intent: 'tools',
+    group: 'community-tool',
+    kind: '모임 도구',
+    title: '마니또',
+    description: '비밀 친구를 배정하고 미션을 함께 이어가요.',
+    meta: '비밀 배정 · 미션 · 완료 현황',
+    badge: 'NEW',
+    available: true,
+  },
   {
     id: 'heart-trace',
     intent: 'test',

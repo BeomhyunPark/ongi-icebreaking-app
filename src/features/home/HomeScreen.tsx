@@ -14,6 +14,7 @@ import { getCachedVisitorCount, getVisitorCount } from '../../engagement/tracker
 type HomeScreenProps = {
   featuredActivityId: ActivityId | null;
   hasActiveSharingRoom: boolean;
+  activeManittoRoomCount?: number;
   onOpenUpdates: () => void;
   onSelectActivity: (
     activityId: ActivityId,
@@ -25,6 +26,7 @@ type HomeScreenProps = {
 };
 
 const ACTIVITY_MARKS: Record<ActivityId, string> = {
+  manitto: '✉',
   'heart-trace': '✦',
   gureumi: '☁',
   'balance-game': 'VS',
@@ -58,6 +60,7 @@ export function pickFeaturedActivity(
 export function HomeScreen({
   featuredActivityId,
   hasActiveSharingRoom,
+  activeManittoRoomCount = 0,
   onOpenUpdates,
   onSelectActivity,
 }: HomeScreenProps) {
@@ -121,6 +124,11 @@ export function HomeScreen({
         </div>
       </header>
 
+      {activeManittoRoomCount > 0 ? (
+        <button className="home-manitto-resume" type="button" onClick={() => onSelectActivity('manitto')}>
+          <span>진행 중인 마니또 · {activeManittoRoomCount}개 모임</span><strong>다시 들어가기 →</strong>
+        </button>
+      ) : null}
       <nav className="home-intents" aria-label="콘텐츠 고르기">
         {HOME_INTENTS.map(([id, label]) => (
           <button type="button" key={id} aria-pressed={intent === id} onClick={() => setIntent(id)}>

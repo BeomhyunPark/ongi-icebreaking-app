@@ -15,11 +15,22 @@ export type Release = {
 
 export const RELEASES: readonly Release[] = [
   {
+    version: 'v2.7.0',
+    date: '2026.09.30',
+    title: '우리끼리 비밀 친구, 마니또',
+    summary: '모임에서 마니또를 배정하고 미션을 함께 이어갈 수 있어요.',
+    current: true,
+    changes: [
+      { title: '마니또 모임', description: '초대 링크나 코드로 모여 각자 자기 상대만 확인해요. 진행자도 참가 여부를 고를 수 있어요.' },
+      { title: '미션과 완료 현황', description: '진행자가 공통 미션을 등록하고 참가자는 완료를 표시해요. 진행자는 참가자별 완료 현황을 볼 수 있어요.' },
+      { title: '진행 중인 모임 복귀', description: '홈에서 진행 중인 마니또로 돌아와요. 참가한 브라우저에서 30일 동안 이어갈 수 있어요.' },
+    ],
+  },
+  {
     version: 'v2.6.2',
     date: '2026.09.30',
     title: 'QR로 다시 이어가는 나눔',
     summary: '잠시 나갔다가 같은 QR로 돌아오면 기존 모임을 이어갈 수 있어요.',
-    current: true,
     changes: [
       { title: 'QR 재입장 복원', description: '같은 브라우저에서 모임 QR을 다시 열면 기존 답변과 참여 상태를 불러와요. 입장 마감 후나 나눔 중에도 돌아올 수 있어요.' },
       { title: '초대 모임 확인', description: '다른 모임의 QR을 열면 해당 모임의 입장 화면으로 안내해요.' },

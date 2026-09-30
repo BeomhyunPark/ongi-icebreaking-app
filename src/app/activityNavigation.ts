@@ -27,7 +27,7 @@ export type ActivityTarget =
       initialWorldCupCategory?: never;
     }
   | {
-      id: 'heart-trace' | 'gureumi' | 'anonymous-sharing';
+      id: 'heart-trace' | 'gureumi' | 'anonymous-sharing' | 'manitto';
       initialGroupPickerMode?: never;
       initialWorldCupCategory?: never;
       initialBalanceGameWeight?: never;
@@ -89,6 +89,7 @@ export function buildActivityUrl(currentUrl: string, target: ActivityTarget | nu
   url.searchParams.delete('category');
   url.searchParams.delete('weight');
   url.searchParams.delete('page');
+  url.searchParams.delete('manittoRoom');
 
   if (target?.id === 'group-picker' && target.initialGroupPickerMode) {
     url.searchParams.set('tool', target.initialGroupPickerMode);
@@ -113,6 +114,7 @@ export function buildPageUrl(currentUrl: string, page: AppPage | null): string {
   url.searchParams.delete('category');
   url.searchParams.delete('weight');
   url.searchParams.delete('page');
+  url.searchParams.delete('manittoRoom');
 
   if (page) {
     url.searchParams.set('page', page);

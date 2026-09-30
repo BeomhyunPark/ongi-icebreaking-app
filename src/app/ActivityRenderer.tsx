@@ -16,6 +16,10 @@ type ActivityRendererProps = {
 // not receive another activity's configuration or know about the registry.
 export function ActivityRenderer({ target, ...navigation }: ActivityRendererProps) {
   switch (target.id) {
+    case 'manitto': {
+      const { Component } = getActivityDefinition('manitto');
+      return <Component onBackHome={navigation.onBackHome} />;
+    }
     case 'group-picker': {
       const { Component } = getActivityDefinition('group-picker');
       return (

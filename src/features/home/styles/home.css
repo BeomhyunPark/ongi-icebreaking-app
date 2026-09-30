@@ -859,3 +859,18 @@
   color: #251c29;
   font-weight: 700;
 }
+.home-manitto-resume {
+  display: grid;
+  gap: .4rem;
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+  border: 1px solid #987385;
+  border-radius: 1rem;
+  background: #392b3d;
+  color: #fff7ef;
+  font: inherit;
+  cursor: pointer;
+}
+.home-manitto-resume strong { color: #ffd2a3; font-size: .85rem; }

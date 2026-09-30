@@ -23,6 +23,7 @@ npm run test:e2e
 | --- | --- |
 | 홈 분류, 좁은 화면, 흔적·밸런스·뽑기·월드컵 복원 | `e2e/activities.spec.ts` |
 | 구르미 답변 복원, 완료 결과, 피드백, 재검사 | `e2e/gureumi.spec.ts` |
+| 마니또 참가·배정·미션·현황판, 홈 이동·새로고침 복원, 종료 | `e2e/manitto.spec.ts` |
 | 서로 다른 세션의 동시 작성, 재연결, 작성자 공개, 라운드 충돌, 종료 | `e2e/sharing.spec.ts` |
 | 외부 요청 차단, 페이지 오류 감지 | `e2e/fixtures.ts` |
 | 브라우저·모바일 설정, 서버 실행 | `playwright.config.ts` |

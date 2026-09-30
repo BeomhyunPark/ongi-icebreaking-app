@@ -38,8 +38,14 @@ const loadGureumiApp = async () => {
   return { default: module.GureumiApp };
 };
 const GureumiApp = lazy(loadGureumiApp);
+const loadManittoApp = async () => {
+  const module = await import('../features/manitto/ManittoApp');
+  return { default: module.ManittoApp };
+};
+const ManittoApp = lazy(loadManittoApp);
 
 const ACTIVITY_REGISTRY = {
+  manitto: { id: 'manitto', Component: ManittoApp, preload: loadManittoApp },
   'heart-trace': {
     id: 'heart-trace',
     Component: HeartTraceApp,
