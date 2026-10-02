@@ -124,7 +124,7 @@ export function ManittoApp({ onBackHome }: { onBackHome: () => void }) {
             }}>{confirmation === 'assign' ? '배정 확정' : '종료 확정'}</PrimaryButton></div>
         </dialog> : null}
       </> : !loading ? <>
-        <section className="manitto-heading"><span className="manitto-badge">우리끼리, 비밀 친구</span><h1>마니또</h1><p>상대를 확인하고 미션을 함께 이어가요.</p></section>
+        <section className="manitto-heading"><span className="manitto-badge">우리끼리 마니또</span><h1>마니또</h1><p>상대를 확인하고 미션을 함께 이어가요.</p></section>
         {!code && rooms.length > 0 ? <section className="manitto-card"><h2>내 모임</h2><ul className="manitto-room-list">{rooms.map((saved) => <li key={saved.code}><button type="button" disabled={busy} onClick={() => controller.open(saved.code)}>{saved.title} <span>이어가기 →</span></button></li>)}</ul></section> : null}
         {(!code || needsJoin) ? <section className="manitto-card">
           <h2>모임 참가하기</h2>
