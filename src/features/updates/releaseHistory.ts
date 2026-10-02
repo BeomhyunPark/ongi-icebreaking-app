@@ -17,7 +17,7 @@ export const RELEASES: readonly Release[] = [
   {
     version: 'v2.7.0',
     date: '2026.09.30',
-    title: '우리끼리 비밀 친구, 마니또',
+    title: '우리끼리 마니또',
     summary: '모임에서 마니또를 배정하고 미션을 함께 이어갈 수 있어요.',
     current: true,
     changes: [

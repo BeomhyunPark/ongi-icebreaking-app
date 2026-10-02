@@ -36,7 +36,7 @@ export const ACTIVITIES: readonly Activity[] = [
     group: 'community-tool',
     kind: '모임 도구',
     title: '마니또',
-    description: '비밀 친구를 배정하고 미션을 함께 이어가요.',
+    description: '마니또를 배정하고 미션을 함께 이어가요.',
     meta: '비밀 배정 · 미션 · 완료 현황',
     badge: 'NEW',
     available: true,
